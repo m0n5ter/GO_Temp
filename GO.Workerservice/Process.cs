@@ -13,9 +13,9 @@ public class Process
 
     public async Task ProcessPackageAsync(ScaleDimensionerResult scaleDimensionerResult) 
     {
-            var freightLetterNumber = scaleDimensionerResult.Barcode;
-            var packageData = await _databaseService.GetOrderAsync(freightLetterNumber); // 1
-            var scanData = await _databaseService.GetScanAsync(freightLetterNumber); // 2
+            var orderBarcode = scaleDimensionerResult.OrderNumber;
+            var packageData = await _databaseService.GetOrderAsync(orderBarcode);
+            var scanData = await _databaseService.GetScanAsync(orderBarcode);
 
             var scanLocation = packageData.df_ndl;
             var date = packageData.df_datauftannahme;

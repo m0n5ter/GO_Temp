@@ -70,26 +70,23 @@ ORDER BY df_datauftannahme DESC", connection)
         return (PackageData?) null;
     });
 
-    public Task<ScanData?> GetScanAsync(string freightLetterNumber) => Execute(async connection =>
+    public Task<ScanData?> GetScanAsync(string orderNumber) => Execute(async connection =>
     {
         var cmd = new OdbcCommand(@"
 SELECT * FROM DBA.TB_SCAN
-WHERE df_pod=ORDER_NUMBER
-    AND df_scananlass=30
-    AND df_packnr=1
-    AND df_abstat='FRA'
-    AND df_empfstat='MUC'
-    AND df_linnr=53
-    AND df_scandat between current date-3 AND current date", connection)
+WHERE 
+  df_scananlass=30 AND 
+  df_packnr=1 AND 
+  df_scandat between current date-3 AND current date ABD
+  df_pod=ORDER_NUMBER AND 
+  df_abstat='FRA' AND
+  df_empfstat='MUC' AND
+  df_linnr=''
+  ", connection)
         {
             Parameters =
             {
-                new()
-                {
-                    ParameterName = "@ORDER_NUMBER",
-                    DbType = System.Data.DbType.VarNumeric,
-                    Value = freightLetterNumber
-                }
+                new("@ORDER_NUMBER", OdbcType.Text) {Value = orderNumber}
             }
         };
 
