@@ -11,11 +11,10 @@ public class Process
         _databaseService = databaseService;
     }
 
-    public async Task ProcessPackageAsync(ScaleDimensionerResult scaleDimensionerResult) 
+    public async Task ProcessPackageAsync(ScaleDimensionerResult scan) 
     {
-            var orderBarcode = scaleDimensionerResult.OrderNumber;
-            var packageData = await _databaseService.GetOrderAsync(orderBarcode);
-            var scanData = await _databaseService.GetScanAsync(orderBarcode);
+            var packageData = await _databaseService.GetOrderAsync(scan);
+            var scanData = await _databaseService.GetScanAsync(scan);
 
             var scanLocation = packageData.df_ndl;
             var date = packageData.df_datauftannahme;
@@ -23,7 +22,7 @@ public class Process
 
             if (scanData == null)
             {
-                await _databaseService.AddScanAsync(scaleDimensionerResult, packageData); // 3
+                await _databaseService.AddScanAsync(scan, packageData); // 3
 
                 var realWeight = await _databaseService.GetWeightAsync(); // 4
 
@@ -45,7 +44,7 @@ public class Process
                     volumeFactor = _configuration.DefaultVolumeFactor;
                 }
 
-                await _databaseService.CreatePackageAsync(packageData, scaleDimensionerResult, volumeFactor); // 8
+                await _databaseService.CreatePackageAsync(packageData, scan, volumeFactor); // 8
 
                 var volumeWeight = await _databaseService.GetTotalWeightAsync(packageData.df_ndl,   // 9
                                                                                   packageData.df_datauftannahme, 

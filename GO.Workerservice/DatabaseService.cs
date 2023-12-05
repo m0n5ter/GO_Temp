@@ -36,7 +36,7 @@ public class DatabaseService
         return null;
     }));
 
-    public Task<PackageData?> GetOrderAsync(string orderNumber) => Execute(async connection =>
+    public Task<PackageData?> GetOrderAsync(ScaleDimensionerResult scan) => Execute(async connection =>
     {
         var cmd = new OdbcCommand(@"
 SELECT FIRST 
@@ -52,12 +52,7 @@ ORDER BY df_datauftannahme DESC", connection)
         {
             Parameters =
             {
-                new()
-                {
-                    ParameterName = "@ORDER_NUMBER",
-                    DbType = System.Data.DbType.String,
-                    Value = orderNumber
-                }
+                new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber}
             }
         };
 
@@ -70,7 +65,7 @@ ORDER BY df_datauftannahme DESC", connection)
         return (PackageData?) null;
     });
 
-    public Task<ScanData?> GetScanAsync(string orderNumber) => Execute(async connection =>
+    public Task<ScanData?> GetScanAsync(ScaleDimensionerResult scan) => Execute(async connection =>
     {
         var cmd = new OdbcCommand(@"
 SELECT * FROM DBA.TB_SCAN
@@ -79,14 +74,17 @@ WHERE
   df_packnr=1 AND 
   df_scandat between current date-3 AND current date ABD
   df_pod=ORDER_NUMBER AND 
-  df_abstat='FRA' AND
-  df_empfstat='MUC' AND
-  df_linnr=''
+  df_abstat=FROM_STATION AND
+  df_empfstat=TO_STATION AND
+  df_linnr=LINE_NUMBER
   ", connection)
         {
             Parameters =
             {
-                new("@ORDER_NUMBER", OdbcType.Text) {Value = orderNumber}
+                new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
+                new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
+                new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
+                new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber}
             }
         };
 
