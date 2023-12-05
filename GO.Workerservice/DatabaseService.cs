@@ -45,14 +45,14 @@ SELECT FIRST
   (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat=df_empfstat) zieldb,
   current database origdb
 FROM DBA.TB_AUFTRAG
-WHERE df_pod = ORDER_NUMBER
+WHERE df_pod=?
   AND df_datauftannahme BETWEEN current date-3 AND current date
   AND df_abstat!='XXX' AND df_empfstat!='XXX'
 ORDER BY df_datauftannahme DESC", connection)
         {
             Parameters =
             {
-                new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber}
+                new("ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber}
             }
         };
 
@@ -72,11 +72,11 @@ SELECT * FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
   df_packnr=1 AND 
-  df_scandat between current date-3 AND current date ABD
-  df_pod=ORDER_NUMBER AND 
-  df_abstat=FROM_STATION AND
-  df_empfstat=TO_STATION AND
-  df_linnr=LINE_NUMBER
+  df_scandat between current date-3 AND current date AND
+  df_pod=? AND 
+  df_abstat=? AND
+  df_empfstat=? AND
+  df_linnr=?
   ", connection)
         {
             Parameters =
