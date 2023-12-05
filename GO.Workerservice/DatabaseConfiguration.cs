@@ -2,15 +2,15 @@ namespace GO.Workerservice;
 
 public sealed class DatabaseConfiguration
 {
-    public required string Host { get; set; } = null!;
+    public required string Host { get; set; } = "192.168.103.201";
 
-    public int Port { get; set; } = 3306;
-
-    public required string Username { get; set; } = null!;
+    public required string Username { get; set; } = "budde";
 
     public string? Password { get; set; } = null;
 
-    public required string Database { get; set; } = null!;
+    public required string Database { get; set; } = "godus";
 
-    public string ConnectionString => $"Server={Host};Port={Port};Database={Database};Uid={Username};Pwd={Password}";
+    public required string Engine { get; set; } = "test";
+
+    public string ConnectionString => $@"Driver={{SQL Anywhere 10}};DatabaseName={Database};EngineName={Engine};uid={Username};pwd={Password};LINKs=tcpip(host={Host})";
 }

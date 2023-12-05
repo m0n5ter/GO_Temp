@@ -19,14 +19,12 @@ public class Worker : BackgroundService
 
         var displayPassword = configuration.DatabaseConfiguration.Password is null ? "-" : "***********";
 
-        _logger.LogDebug(
-            "DatabaseConfiguration: \n\t" +
+        _logger.LogDebug("DatabaseConfiguration: \n\t" +
             $"Host: {configuration.DatabaseConfiguration.Host} \n\t" +
-            $"Port: {configuration.DatabaseConfiguration.Port} \n\t" +
             $"Username: {configuration.DatabaseConfiguration.Username} \n\t" +
             $"Password: {displayPassword} \n\t" +
-            $"Database: {configuration.DatabaseConfiguration.Database} \n"
-        );
+            $"Database: {configuration.DatabaseConfiguration.Database} \n\t" +
+            $"Engine: {configuration.DatabaseConfiguration.Engine}\n");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

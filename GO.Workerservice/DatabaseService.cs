@@ -55,7 +55,7 @@ public class DatabaseService
         cmd.Parameters.Add(new()
         {
             ParameterName = "@FREIGHT_LETTER_NUMBER",
-            DbType = System.Data.DbType.VarNumeric,
+            DbType = System.Data.DbType.String,
             Value = freightLetterNumber
         });
 
