@@ -54,6 +54,12 @@ public sealed class ScaleDimensionerResult
 
     public string Barcode { get; }
 
+    public string ToStation { get; set; }
+
+    public string FromStation { get; }
+
+    public string LineNumber { get; }
+
     public ScaleState ScaleState { get; }
 
     public DimensionerState DimensionerState { get; }
@@ -79,12 +85,14 @@ public sealed class ScaleDimensionerResult
         if (data[20] != 'B') throw new Exception("Barcode flag missing");
 
         Weight = TryParseDouble(data[1..6], nameof(Weight));
-
         Length = TryParseDouble(data[8..11], nameof(Length));
         Width = TryParseDouble(data[12..15], nameof(Width));
         Height = TryParseDouble(data[16..19], nameof(Height));
         Volume = Width * Height * Length;
         Barcode = data[41..80].TrimStart('#', ' ');
+        FromStation = Barcode[..3];
+        ToStation = Barcode[3..6];
+        LineNumber = Barcode[7..9];
 
         // TODO: The values below are probably wrong, need to test
 

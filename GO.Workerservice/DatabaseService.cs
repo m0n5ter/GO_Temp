@@ -36,75 +36,70 @@ public class DatabaseService
         return null;
     }));
 
-    public Task<PackageData?> GetOrderAsync(string freightLetterNumber) => Execute(async connection =>
+    public Task<PackageData?> GetOrderAsync(string orderNumber) => Execute(async connection =>
     {
-        var cmd = connection.CreateCommand();
-
-        cmd.CommandText = @"SELECT FIRST *,
-                            (select if df_kz_go>0 then 'go'+lower(df_hstat) else null endif from dba.tb_stationen
-                            where df_stat=df_abstat) zieldb1,
-                            (select if df_kz_go>0 then 'go'+lower(df_hstat) else null endif from dba.tb_stationen
-                            where df_stat=df_empfstat) zieldb,
-                            current database origdb
-                            FROM DBA.TB_AUFTRAG
-                            WHERE df_pod=FREIGHT_LETTER_NUMBER
-                            AND df_datauftannahme BETWEEN current date-3 AND current date
-                            AND df_abstat!='XXX' AND df_empfstat!='XXX'
-                            ORDER BY df_datauftannahme DESC";
-
-        cmd.Parameters.Add(new()
+        var cmd = new OdbcCommand(@"
+SELECT FIRST 
+  *,
+  (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat = df_abstat) zieldb1,
+  (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat=df_empfstat) zieldb,
+  current database origdb
+FROM DBA.TB_AUFTRAG
+WHERE df_pod = ORDER_NUMBER
+  AND df_datauftannahme BETWEEN current date-3 AND current date
+  AND df_abstat!='XXX' AND df_empfstat!='XXX'
+ORDER BY df_datauftannahme DESC", connection)
         {
-            ParameterName = "@FREIGHT_LETTER_NUMBER",
-            DbType = System.Data.DbType.String,
-            Value = freightLetterNumber
-        });
-
-        await using var reader = cmd.ExecuteReader();
-
-        if (reader.HasRows)
-        {
-            while (reader.Read())
+            Parameters =
             {
-                Console.WriteLine("{0}: {1:C}", reader[0], reader[1]);
+                new()
+                {
+                    ParameterName = "@ORDER_NUMBER",
+                    DbType = System.Data.DbType.String,
+                    Value = orderNumber
+                }
             }
-        }
-        else
-        {
-            Console.WriteLine("No rows found.");
-        }
+        };
 
-        reader.Close();
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        if (!reader.HasRows) return null;
+        
+        await reader.ReadAsync();
 
         return (PackageData?) null;
     });
 
     public Task<ScanData?> GetScanAsync(string freightLetterNumber) => Execute(async connection =>
     {
-        var cmd = connection.CreateCommand();
-
-        cmd.CommandText = @"SELECT * FROM DBA.TB_SCAN
-                            where df_pod=FREIGHT_LETTER_NUMBER
-                            and df_scananlass=30
-                            and df_packnr=1
-                            and df_abstat='FRA'
-                            and df_empfstat='MUC'
-                            and df_linnr=53
-                            and df_scandat between current date-3 and current date;";
-
-        OdbcParameter param = new()
+        var cmd = new OdbcCommand(@"
+SELECT * FROM DBA.TB_SCAN
+WHERE df_pod=ORDER_NUMBER
+    AND df_scananlass=30
+    AND df_packnr=1
+    AND df_abstat='FRA'
+    AND df_empfstat='MUC'
+    AND df_linnr=53
+    AND df_scandat between current date-3 AND current date", connection)
         {
-            ParameterName = "@FREIGHT_LETTER_NUMBER",
-            DbType = System.Data.DbType.VarNumeric,
-            Value = freightLetterNumber
+            Parameters =
+            {
+                new()
+                {
+                    ParameterName = "@ORDER_NUMBER",
+                    DbType = System.Data.DbType.VarNumeric,
+                    Value = freightLetterNumber
+                }
+            }
         };
 
-        cmd.Parameters.Add(param);
+        await using var reader = await cmd.ExecuteReaderAsync();
 
-        ScanData scanData = null;
+        if (!reader.HasRows) return null;
 
-        await cmd.ExecuteReaderAsync();
+        await reader.ReadAsync();
 
-        return scanData;
+        return (ScanData?)null;
     });
 
     public Task AddScanAsync(ScaleDimensionerResult scaleDimensionerResult, PackageData packageData) => Execute(async connection =>
