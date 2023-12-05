@@ -54,6 +54,8 @@ public sealed class ScaleDimensionerResult
 
     public string Barcode { get; }
 
+    public string OrderNumber { get; }
+
     public string ToStation { get; set; }
 
     public string FromStation { get; }
@@ -93,6 +95,7 @@ public sealed class ScaleDimensionerResult
         FromStation = Barcode[..3];
         ToStation = Barcode[3..6];
         LineNumber = Barcode[7..9];
+        OrderNumber = Barcode[9..];
 
         // TODO: The values below are probably wrong, need to test
 
