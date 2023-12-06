@@ -49,9 +49,7 @@ public class Worker : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var process = scope.ServiceProvider.GetRequiredService<Process>();
             _logger.LogInformation("New MQTT message received: {0}", e);
-            var s = new ScaleDimensionerResult(e);
-
-            await process.ProcessPackageAsync(s);
+            await process.ProcessPackageAsync(e);
         }
         catch (Exception exception)
         {
