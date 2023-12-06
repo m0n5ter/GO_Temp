@@ -1,7 +1,7 @@
 namespace GO.Workerservice;
 
 using Microsoft.Extensions.Logging;
-using System.Data.Common;
+using System;
 using System.Data.Odbc;
 
 public class DatabaseService
@@ -11,7 +11,7 @@ public class DatabaseService
     private readonly DatabaseConfiguration _databaseConfiguration;
     private readonly ILogger<DatabaseService> _logger;
     private OdbcConnection? _connection;
-    private DbTransaction? _transaction;
+    private OdbcTransaction? _transaction;
 
     public DatabaseService(Configuration configuration, ILogger<DatabaseService> logger)
     {
@@ -23,7 +23,7 @@ public class DatabaseService
     {
         _connection = new OdbcConnection {ConnectionString = _databaseConfiguration.ConnectionString};
         await _connection.OpenAsync();
-        _transaction = await _connection.BeginTransactionAsync();
+        _transaction = (OdbcTransaction?) await _connection.BeginTransactionAsync();
     }
 
     private async Task End(bool commit)
@@ -49,21 +49,18 @@ public class DatabaseService
 
     public Task Rollback() => End(false);
 
-    private async Task<T> Execute<T>(Func<DbTransaction, Task<T>> task)
+    private OdbcCommand BuildCommand(string sql, params OdbcParameter[] parameters)
     {
         if (_transaction == null) throw new InvalidOperationException("Call Begin() first");
-           return await task(_transaction);
+
+        var command = new OdbcCommand(sql, _connection, _transaction);
+        command.Parameters.AddRange(parameters);
+        return command;
     }
 
-    private async Task Execute(Func<DbTransaction, Task> action) => await Execute(new Func<DbTransaction, Task<object?>>(async c =>
+    public async Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan)
     {
-        await action(c);
-        return null;
-    }));
-
-    public Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan) => Execute(async transaction =>
-    {
-        var cmd = new OdbcCommand(@$"
+        var cmd = BuildCommand(@$"
 SELECT FIRST 
   *,
   (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat = df_abstat) zieldb1,
@@ -73,13 +70,8 @@ FROM DBA.TB_AUFTRAG
 WHERE df_pod=?
   AND df_datauftannahme BETWEEN current date-{DAYS_TO_CONSIDER} AND current date
   AND df_abstat!='XXX' AND df_empfstat!='XXX'
-ORDER BY df_datauftannahme DESC", transaction.Connection, transaction)
-        {
-            Parameters =
-            {
-                new("ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber}
-            }
-        };
+ORDER BY df_datauftannahme DESC",
+            new OdbcParameter("ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber});
 
         await using var reader = await cmd.ExecuteReaderAsync();
 
@@ -88,11 +80,11 @@ ORDER BY df_datauftannahme DESC", transaction.Connection, transaction)
         await reader.ReadAsync();
 
         return new OrderData(reader);
-    });
+    }
 
-    public Task<ScanData2?> GetScanAsync(ScaleDimensionerResult scan) => Execute(async transaction =>
+    public async Task<ScanData2?> GetScanAsync(ScaleDimensionerResult scan)
     {
-        var cmd = new OdbcCommand(@$"
+        var cmd = BuildCommand(@$"
 SELECT * FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
@@ -102,18 +94,13 @@ WHERE
   df_abstat=? AND
   df_empfstat=? AND
   df_linnr=?
-  ", transaction.Connection, transaction)
-        {
-            Parameters =
-            {
-                new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
-                new("@PACKAGE_NUMBER", OdbcType.Int) {Value = scan.PackageNumber},
-                new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
-                new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
-                new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber}
-            }
-        };
-
+  ",
+            new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
+            new("@PACKAGE_NUMBER", OdbcType.Int) {Value = scan.PackageNumber},
+            new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
+            new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
+            new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber});
+    
         await using var reader = await cmd.ExecuteReaderAsync();
 
         if (!reader.HasRows) return null;
@@ -121,7 +108,7 @@ WHERE
         await reader.ReadAsync();
 
         return new ScanData2(reader);
-    });
+    }
 
     //public Task AddScanAsync(ScaleDimensionerResult scaleDimensionerResult, PackageData packageData) => Execute(async connection =>
     //{
