@@ -90,9 +90,9 @@ public sealed class ScaleDimensionerResult
 
         Weight = TryParseDecimal(data[1..6], nameof(Weight));
         
-        Length = TryParseInt(data[8..11], nameof(Length));
-        Width = TryParseInt(data[12..15], nameof(Width));
-        Height = TryParseInt(data[16..19], nameof(Height));
+        Length = TryParseInt(data[8..12], nameof(Length));
+        Width = TryParseInt(data[12..16], nameof(Width));
+        Height = TryParseInt(data[16..20], nameof(Height));
         
         Volume = Width * Height * Length;
 
