@@ -13,9 +13,13 @@ public class Process
         _logger = logger;
     }
 
-    public async Task ProcessPackageAsync(ScaleDimensionerResult scan)
+    public async Task ProcessPackageAsync(string message)
     {
+        var scan = new ScaleDimensionerResult(message);
+        
+        _logger.LogInformation("Processing scan: {scan}", scan);
         _logger.LogInformation("Starting database transaction");
+
         await _databaseService.Begin();
 
         try

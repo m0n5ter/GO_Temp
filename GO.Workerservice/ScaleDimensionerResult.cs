@@ -80,6 +80,8 @@ public sealed class ScaleDimensionerResult
 
     private static int TryParseInt(string s, string name) => int.TryParse(s, CultureInfo.InvariantCulture, out var i) ? i : throw new Exception($"Failed to parse {name}: {s}");
 
+    public override string ToString() => $"{FromStation}==>{ToStation}({LineNumber})|{OrderNumber}:{PackageNumber}|{Width}x{Length}x{Height}cm|{Volume}cm3|{Weight}kg";
+
     public ScaleDimensionerResult(string data)
     {
         if (data.Length != 92) throw new Exception($"Unexpected message length: {data.Length}");
