@@ -1,30 +1,6 @@
 using System.Globalization;
 
-namespace GO.Workerservice;
-
-public enum Shape 
-{
-    UnknownShape = 0x00,
-    Cylinder = 0x01,
-    Cubic = 0x04,
-    Tyre = 0x07
-}
-
-public enum ScaleState 
-{
-    NotOk = -1,
-    Ok = 0,
-    Unstable = 1,
-    MultipleItems = 3,
-    Underloaded = 4,
-    Overloaded = 5,
-}
-
-public enum DimensionerState 
-{
-    LFT = 0,
-    NoLFT = 1
-}
+namespace GO.Workerservice.Model;
 
 /*
     Byte        Name

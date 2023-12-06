@@ -1,4 +1,4 @@
-namespace GO.Workerservice;
+namespace GO.Workerservice.Config;
 
 public sealed class DatabaseConfiguration
 {

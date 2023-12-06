@@ -1,4 +1,8 @@
-namespace GO.Workerservice;
+using GO.Workerservice.Config;
+using GO.Workerservice.Data;
+using GO.Workerservice.Model;
+
+namespace GO.Workerservice.Logic;
 
 public class Process 
 {

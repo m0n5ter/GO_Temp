@@ -1,16 +1,16 @@
-using GO.Workerservice.Connection.Broker;
-using GO.Workerservice.Connection.Client;
+using GO.Workerservice.Config;
+using GO.Workerservice.Mqtt;
 
-namespace GO.Workerservice;
+namespace GO.Workerservice.Logic;
 
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly MBroker _broker;
-    private readonly MClient _client;
+    private readonly MqttBroker _broker;
+    private readonly MqttClient _client;
     private readonly IServiceProvider _serviceProvider;
 
-    public Worker(IServiceProvider serviceProvider, ILogger<Worker> logger, MBroker broker, MClient client, Configuration configuration)
+    public Worker(IServiceProvider serviceProvider, ILogger<Worker> logger, MqttBroker broker, MqttClient client, Configuration configuration)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -53,7 +53,7 @@ public class Worker : BackgroundService
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Failed to process MQTT message: {0}", e);
+            _logger.LogError(exception, "Failed to process message");
         }
     }
 }

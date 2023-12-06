@@ -1,16 +1,16 @@
-﻿using MQTTnet.Server;
-using MQTTnet;
+﻿using MQTTnet;
+using MQTTnet.Server;
 
-namespace GO.Workerservice.Connection.Broker;
+namespace GO.Workerservice.Mqtt;
 
-public class MBroker
+public class MqttBroker
 {
     private readonly MqttServer _broker;
     private readonly MqttFactory _mqttFactory;
-    private readonly ILogger<MBroker> _logger;
+    private readonly ILogger<MqttBroker> _logger;
     private readonly IConfiguration _configuration;
 
-    public MBroker(ILogger<MBroker> logger, IConfiguration configuration)
+    public MqttBroker(ILogger<MqttBroker> logger, IConfiguration configuration)
     {
         _logger = logger;
         _configuration = configuration;

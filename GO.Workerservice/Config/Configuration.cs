@@ -1,6 +1,4 @@
-namespace GO.Workerservice;
-
-using Microsoft.Extensions.Logging;
+namespace GO.Workerservice.Config;
 
 public sealed class Configuration
 {

@@ -1,7 +1,6 @@
-namespace GO.Workerservice;
-
 using System.Globalization;
-using Microsoft.Extensions.Configuration;
+
+namespace GO.Workerservice.Config;
 
 public static class ConfigurationReader
 {

@@ -1,10 +1,9 @@
-using System.Globalization;
-
-namespace GO.Workerservice;
-
-using Microsoft.Extensions.Logging;
-using System;
 using System.Data.Odbc;
+using System.Globalization;
+using GO.Workerservice.Config;
+using GO.Workerservice.Model;
+
+namespace GO.Workerservice.Data;
 
 public class DatabaseService
 {

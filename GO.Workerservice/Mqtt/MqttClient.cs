@@ -1,11 +1,11 @@
-﻿using MQTTnet.Client;
-using MQTTnet.Packets;
+﻿using System.Text;
 using MQTTnet;
-using System.Text;
+using MQTTnet.Client;
+using MQTTnet.Packets;
 
-namespace GO.Workerservice.Connection.Client;
+namespace GO.Workerservice.Mqtt;
 
-public class MClient
+public class MqttClient
 {
     public event EventHandler<string>? OnReceivingMessage;
     public event EventHandler? ClientConnected;
@@ -19,12 +19,12 @@ public class MClient
     private readonly List<string> _topics;
 
     private readonly IConfiguration _configuration;
-    private readonly ILogger<MClient> _logger;
+    private readonly ILogger<MqttClient> _logger;
 
     private readonly IMqttClient _client;
     private readonly MqttFactory _mqttFactory;
 
-    public MClient(ILogger<MClient> logger, IConfiguration configuration)
+    public MqttClient(ILogger<MqttClient> logger, IConfiguration configuration)
     {
         _logger = logger;
         _configuration = configuration;
