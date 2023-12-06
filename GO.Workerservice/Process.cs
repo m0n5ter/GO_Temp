@@ -4,17 +4,33 @@ public class Process
 {
     private readonly DatabaseService _databaseService;
     private readonly Configuration _configuration;
+    private readonly ILogger<Process> _logger;
 
-    public Process(Configuration configuration, DatabaseService databaseService) 
+    public Process(Configuration configuration, DatabaseService databaseService, ILogger<Process> logger) 
     {
         _configuration = configuration;
         _databaseService = databaseService;
+        _logger = logger;
     }
 
-    public async Task ProcessPackageAsync(ScaleDimensionerResult scan) 
+    public async Task ProcessPackageAsync(ScaleDimensionerResult scan)
     {
+        await _databaseService.Begin();
+
+        try
+        {
             var packageData = await _databaseService.GetOrderAsync(scan);
             var scanData = await _databaseService.GetScanAsync(scan);
+
+            _logger.LogInformation("Committing database transaction");
+            await _databaseService.Commit();
+        }
+        catch
+        {
+            await _databaseService.Rollback();
+            _logger.LogWarning("Transaction has been rolled back, no changes were made to the database");
+            throw;
+        }
 
             //var scanLocation = packageData.df_ndl;
             //var date = packageData.df_datauftannahme;

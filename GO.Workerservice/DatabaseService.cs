@@ -1,6 +1,7 @@
 namespace GO.Workerservice;
 
 using Microsoft.Extensions.Logging;
+using System.Data.Common;
 using System.Data.Odbc;
 
 public class DatabaseService
@@ -9,6 +10,8 @@ public class DatabaseService
 
     private readonly DatabaseConfiguration _databaseConfiguration;
     private readonly ILogger<DatabaseService> _logger;
+    private OdbcConnection? _connection;
+    private DbTransaction? _transaction;
 
     public DatabaseService(Configuration configuration, ILogger<DatabaseService> logger)
     {
@@ -16,20 +19,40 @@ public class DatabaseService
         _logger = logger;
     }
 
+    public async Task Begin()
+    {
+        _connection = new OdbcConnection {ConnectionString = _databaseConfiguration.ConnectionString};
+        await _connection.OpenAsync();
+        _transaction = await _connection.BeginTransactionAsync();
+    }
+
+    private async Task End(bool commit)
+    {
+        if (_transaction != null)
+        {
+            if (commit)
+                await _transaction.CommitAsync();
+            else
+                await _transaction.RollbackAsync();
+
+            _transaction = null;
+        }
+
+        if (_connection != null)
+        {
+            await _connection.CloseAsync();
+            _connection = null;
+        }
+    }
+
+    public Task Commit() => End(true);
+
+    public Task Rollback() => End(false);
+
     private async Task<T> Execute<T>(Func<OdbcConnection, Task<T>> task)
     {
-        await using var connection = new OdbcConnection();
-        connection.ConnectionString = _databaseConfiguration.ConnectionString;
-        await connection.OpenAsync();
-
-        try
-        {
-            return await task(connection);
-        }
-        finally
-        {
-            await connection.CloseAsync();
-        }
+        if (_connection == null) throw new InvalidOperationException("Call Begin() first");
+           return await task(_connection);
     }
 
     private async Task Execute(Func<OdbcConnection, Task> action) => await Execute(new Func<OdbcConnection, Task<object?>>(async c =>
