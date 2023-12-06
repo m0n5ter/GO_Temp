@@ -87,15 +87,21 @@ public sealed class ScaleDimensionerResult
         if (data[20] != 'B') throw new Exception("Barcode flag missing");
 
         Weight = TryParseDouble(data[1..6], nameof(Weight));
+        
         Length = TryParseDouble(data[8..11], nameof(Length));
         Width = TryParseDouble(data[12..15], nameof(Width));
         Height = TryParseDouble(data[16..19], nameof(Height));
+        
         Volume = Width * Height * Length;
-        Barcode = data[41..80].TrimStart('#', ' ');
+
+        Barcode = data[41..81].TrimStart('#', ' ');
+        if (Barcode.Length != 22) throw new Exception($"Unexpected barcode length: {Barcode.Length}");
+
         FromStation = Barcode[..3];
         ToStation = Barcode[3..6];
-        LineNumber = Barcode[7..9];
-        OrderNumber = Barcode[9..];
+        LineNumber = Barcode[6..8];
+        OrderNumber = Barcode[8..20];
+        PackageNumber = Barcode[20..22];
 
         // TODO: The values below are probably wrong, need to test
 
@@ -105,4 +111,6 @@ public sealed class ScaleDimensionerResult
         ScaleLFT = data[88] == '1';
         DimensionerLFT = data[89] == '1';
     }
+
+    public string PackageNumber { get; set; }
 }
