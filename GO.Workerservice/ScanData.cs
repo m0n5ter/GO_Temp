@@ -1,4 +1,28 @@
+using System.Data.Common;
+
 namespace GO.Workerservice;
+
+public class ScanData2
+{
+    private string DF_ABSTAT;
+    private string DF_EMPFSTAT;
+    private string DF_LINNR;
+    private string DF_POD;
+    private int DF_PACKNR;
+    private DateTime DF_SCANDAT;
+    private TimeSpan DF_SCANTIME;
+
+    public ScanData2(DbDataReader reader)
+    {
+        DF_ABSTAT = (string)reader[nameof(DF_ABSTAT)];
+        DF_EMPFSTAT = (string)reader[nameof(DF_EMPFSTAT)];
+        DF_LINNR = (string)reader[nameof(DF_LINNR)];
+        DF_POD = (string)reader[nameof(DF_POD)];
+        DF_PACKNR = (int)reader[nameof(DF_PACKNR)];
+        DF_SCANDAT = (DateTime)reader[nameof(DF_SCANDAT)];
+        DF_SCANTIME = (TimeSpan)reader[nameof(DF_SCANTIME)];
+    }
+}
 
 public class ScanData 
 {

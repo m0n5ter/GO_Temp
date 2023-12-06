@@ -67,14 +67,14 @@ ORDER BY df_datauftannahme DESC", connection)
         return new OrderData(reader);
     });
 
-    public Task<ScanData?> GetScanAsync(ScaleDimensionerResult scan) => Execute(async connection =>
+    public Task<ScanData2?> GetScanAsync(ScaleDimensionerResult scan) => Execute(async connection =>
     {
-        var cmd = new OdbcCommand(@"
+        var cmd = new OdbcCommand(@$"
 SELECT * FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
   df_packnr=1 AND 
-  df_scandat between current date-3 AND current date AND
+  df_scandat between current date-{DAYS_TO_CONSIDER} AND current date AND
   df_pod=? AND 
   df_abstat=? AND
   df_empfstat=? AND
@@ -96,7 +96,7 @@ WHERE
 
         await reader.ReadAsync();
 
-        return (ScanData?)null;
+        return new ScanData2(reader);
     });
 
     public Task AddScanAsync(ScaleDimensionerResult scaleDimensionerResult, PackageData packageData) => Execute(async connection =>
