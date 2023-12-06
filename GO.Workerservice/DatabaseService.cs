@@ -5,6 +5,8 @@ using System.Data.Odbc;
 
 public class DatabaseService
 {
+    private const int DAYS_TO_CONSIDER = 100;
+
     private readonly DatabaseConfiguration _databaseConfiguration;
     private readonly ILogger<DatabaseService> _logger;
 
@@ -38,7 +40,7 @@ public class DatabaseService
 
     public Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan) => Execute(async connection =>
     {
-        var cmd = new OdbcCommand(@"
+        var cmd = new OdbcCommand(@$"
 SELECT FIRST 
   *,
   (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat = df_abstat) zieldb1,
@@ -46,7 +48,7 @@ SELECT FIRST
   current database origdb
 FROM DBA.TB_AUFTRAG
 WHERE df_pod=?
-  AND df_datauftannahme BETWEEN current date-3 AND current date
+  AND df_datauftannahme BETWEEN current date-{DAYS_TO_CONSIDER} AND current date
   AND df_abstat!='XXX' AND df_empfstat!='XXX'
 ORDER BY df_datauftannahme DESC", connection)
         {
