@@ -129,7 +129,7 @@ VALUES
         await cmd.ExecuteNonQueryAsync();
     }
 
-    public async Task<double?> GetTotalWeightAsync(ScaleDimensionerResult scan)
+    public async Task<decimal?> GetTotalWeightAsync(ScaleDimensionerResult scan)
     {
         var cmd = BuildCommand($@"
 SELECT 
@@ -147,7 +147,7 @@ WHERE
             new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
             new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber});
 
-        return await cmd.ExecuteScalarAsync() as double?;
+        return await cmd.ExecuteScalarAsync() as decimal?;
     }
 
     //public Task UpdateWeightAsync(int weight, string scanLocation, string date, string orderNumber) => Execute(async connection =>
