@@ -44,13 +44,13 @@ public enum DimensionerState
 
 public sealed class ScaleDimensionerResult
 {
-    public double Weight { get; }
+    public decimal Weight { get; }
     
-    public double Length { get; }
+    public int Length { get; }
     
-    public double Width { get; }
+    public int Width { get; }
     
-    public double Height { get; }
+    public int Height { get; }
 
     public string Barcode { get; }
 
@@ -76,9 +76,9 @@ public sealed class ScaleDimensionerResult
 
     public double Volume { get; }
     
-    private static double TryParseDouble(string s, string name) => double.TryParse(s, CultureInfo.InvariantCulture, out var d) ? d : throw new Exception($"Failed to parse {name}: {s}");
+    private static decimal TryParseDecimal(string s, string name) => decimal.TryParse(s, CultureInfo.InvariantCulture, out var d) ? d : throw new Exception($"Failed to parse {name}: {s}");
 
-    private static int TryParseInt(string s, string name) => int.TryParse(s, CultureInfo.InvariantCulture, out var ds) ? ds : throw new Exception($"Failed to parse {name}: {s}");
+    private static int TryParseInt(string s, string name) => int.TryParse(s, CultureInfo.InvariantCulture, out var i) ? i : throw new Exception($"Failed to parse {name}: {s}");
 
     public ScaleDimensionerResult(string data)
     {
@@ -88,11 +88,11 @@ public sealed class ScaleDimensionerResult
         if (data[7] != 'V') throw new Exception("Volume flag missing");
         if (data[20] != 'B') throw new Exception("Barcode flag missing");
 
-        Weight = TryParseDouble(data[1..6], nameof(Weight));
+        Weight = TryParseDecimal(data[1..6], nameof(Weight));
         
-        Length = TryParseDouble(data[8..11], nameof(Length));
-        Width = TryParseDouble(data[12..15], nameof(Width));
-        Height = TryParseDouble(data[16..19], nameof(Height));
+        Length = TryParseInt(data[8..11], nameof(Length));
+        Width = TryParseInt(data[12..15], nameof(Width));
+        Height = TryParseInt(data[16..19], nameof(Height));
         
         Volume = Width * Height * Length;
 

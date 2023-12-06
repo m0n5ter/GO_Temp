@@ -20,7 +20,19 @@ public class Process
         try
         {
             var orderData = await _databaseService.GetOrderAsync(scan);
-            var scanData = await _databaseService.GetScanAsync(scan);
+
+            if (orderData == null)
+                return;
+
+
+            var scanExists = await _databaseService.ScanExistsAsync(scan);
+
+            if (!scanExists)
+            {
+                await _databaseService.AddScanAsync(orderData, scan);
+            }
+
+
             var totalWeight = await _databaseService.GetTotalWeightAsync(scan);
 
             _logger.LogInformation("Committing database transaction");

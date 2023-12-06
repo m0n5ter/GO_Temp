@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace GO.Workerservice;
 
 using Microsoft.Extensions.Logging;
@@ -8,20 +10,20 @@ public class DatabaseService
 {
     private const int DAYS_TO_CONSIDER = 100;
 
-    private readonly DatabaseConfiguration _databaseConfiguration;
+    private readonly Configuration _configuration;
     private readonly ILogger<DatabaseService> _logger;
     private OdbcConnection? _connection;
     private OdbcTransaction? _transaction;
 
     public DatabaseService(Configuration configuration, ILogger<DatabaseService> logger)
     {
-        _databaseConfiguration = configuration.DatabaseConfiguration;
+        _configuration = configuration;
         _logger = logger;
     }
 
     public async Task Begin()
     {
-        _connection = new OdbcConnection {ConnectionString = _databaseConfiguration.ConnectionString};
+        _connection = new OdbcConnection {ConnectionString = _configuration.DatabaseConfiguration.ConnectionString};
         await _connection.OpenAsync();
         _transaction = (OdbcTransaction?) await _connection.BeginTransactionAsync();
     }
@@ -82,11 +84,11 @@ ORDER BY df_datauftannahme DESC",
         return new OrderData(reader);
     }
 
-    public async Task<ScanData2?> GetScanAsync(ScaleDimensionerResult scan)
+    public async Task<bool> ScanExistsAsync(ScaleDimensionerResult scan)
     {
         var cmd = BuildCommand(@$"
 SELECT 
-  * 
+  FIRST * 
 FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
@@ -105,65 +107,27 @@ WHERE
     
         await using var reader = await cmd.ExecuteReaderAsync();
 
-        if (!reader.HasRows) return null;
-
-        await reader.ReadAsync();
-
-        return new ScanData2(reader);
+        return reader.HasRows;
     }
 
-    //public Task AddScanAsync(ScaleDimensionerResult scaleDimensionerResult, PackageData packageData) => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
+    public async Task AddScanAsync(OrderData order, ScaleDimensionerResult scan)
+    {
+        var cmd = BuildCommand(@$"
+INSERT INTO DBA.TB_SCAN
+    (DF_ABSTAT, DF_EMPFSTAT, DF_LINNR, DF_POD, DF_PACKNR, DF_SCANDAT, DF_SCANTIME,
+    DF_SCANORT, DF_SCANANLASS, DF_ERRCODE, DF_PLATZNR, DF_USER, DF_GEWICHT, DF_KFZNR,
+    DF_DATSCHICHT, DF_ORIGDB, DF_ZIELDB, DF_ZIELDB1, DF_HUB, DF_ZIELDB2, DF_TIMESTAMP,
+    DF_DISPOAN, DF_MANUELL, DF_ZIELDB_AUFTRAGGEBER, DF_NDL, DF_DATAUFTANNAHME,
+    DF_LFDNRAUFTRAG, DF_LAENGE, DF_BREITE, DF_HOEHE)
+VALUES
+    ('{scan.FromStation}', '{scan.ToStation}', '{scan.LineNumber}', '{scan.OrderNumber}', {scan.PackageNumber}, current date, current time, 
+    '{_configuration.ScanLocation}', 30, '', 0, '{_configuration.ScanLocation}', {scan.Weight.ToString(CultureInfo.InvariantCulture)}, null,
+    current date, current database, null, null, 'RH6', null, current timestamp,
+    0, 'N', null, '{_configuration.ScanLocation}', current date,
+    {order.DF_LFDNRAUFTRAG}, {scan.Length}, {scan.Width}, {scan.Height})");
 
-    //    cmd.CommandText = @"INSERT INTO DBA.TB_SCAN
-    //                        (df_abstat, df_empfstat, df_linnr, df_pod, df_packnr, df_scandat, df_scantime,
-    //                        df_scanort, df_scananlass, df_errcode, df_platznr, df_user, df_gewicht, df_kfznr,
-    //                        df_datschicht, df_origdb, df_zieldb, df_zieldb1, df_hub, df_zieldb2, df_timestamp,
-    //                        df_dispoan, df_manuell, df_zieldb_auftraggeber, df_ndl, df_datauftannahme,
-    //                        df_lfdnrauftrag, df_laenge, df_breite, df_hoehe)
-    //                        VALUES
-    //                        (DF_ABSTAT, DF_EMPFSTAT, DF_LINNR, DF_POD, DF_PACKNR, DF_SCANDAT, DF_SCANTIME,
-    //                        DF_SCANORT, DF_SCANANLASS, DF_ERRCODE, DF_PLATZNR, DF_USER, WEIGHT, DF_KFZNR,
-    //                        DF_DATSCHICHT, DF_ORIGDB, DF_ZIELDB, DF_ZIELDB1, DF_HUB, DF_ZIELDB2, DF_TIMESTAMP,
-    //                        DF_DISPOAN, DF_MANUELL, DF_ZIELDB_AUFTRAGGEBER, DF_NDL, DF_DATAUFTANNAHME,
-    //                        DF_LFGNRAUFTRAG, LENGTH, WIDTH, HEIGHT);";
-
-    //    OdbcParameter weightParam = new()
-    //    {
-    //        ParameterName = "@WEIGHT",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = scaleDimensionerResult.Weight
-    //    };
-
-    //    OdbcParameter lengthParam = new()
-    //    {
-    //        ParameterName = "@LENGTH",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = scaleDimensionerResult.Length
-    //    };
-
-    //    OdbcParameter widthParam = new()
-    //    {
-    //        ParameterName = "@WIDTH",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = scaleDimensionerResult.Width
-    //    };
-
-    //    OdbcParameter heightParam = new()
-    //    {
-    //        ParameterName = "@HEIGTH",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = scaleDimensionerResult.Height
-    //    };
-
-    //    cmd.Parameters.Add(weightParam);
-    //    cmd.Parameters.Add(lengthParam);
-    //    cmd.Parameters.Add(widthParam);
-    //    cmd.Parameters.Add(heightParam);
-
-    //    await cmd.ExecuteNonQueryAsync();
-    //});
+        await cmd.ExecuteNonQueryAsync();
+    }
 
     public async Task<double?> GetTotalWeightAsync(ScaleDimensionerResult scan)
     {

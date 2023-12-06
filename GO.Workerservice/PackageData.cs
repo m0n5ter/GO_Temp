@@ -5,11 +5,8 @@ namespace GO.Workerservice;
 public class OrderData
 {
     public string DF_NDL { get; init; }
-    
     public DateTime DF_DATAUFTANNAHME { get; init; }
-
     public int DF_LFDNRAUFTRAG { get; init; }
-
     public string DF_POD { get; init; }
 
     public OrderData(DbDataReader reader)
