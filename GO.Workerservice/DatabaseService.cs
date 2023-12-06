@@ -36,7 +36,7 @@ public class DatabaseService
         return null;
     }));
 
-    public Task<PackageData?> GetOrderAsync(ScaleDimensionerResult scan) => Execute(async connection =>
+    public Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan) => Execute(async connection =>
     {
         var cmd = new OdbcCommand(@"
 SELECT FIRST 
@@ -62,7 +62,7 @@ ORDER BY df_datauftannahme DESC", connection)
         
         await reader.ReadAsync();
 
-        return (PackageData?) null;
+        return new OrderData(reader);
     });
 
     public Task<ScanData?> GetScanAsync(ScaleDimensionerResult scan) => Execute(async connection =>

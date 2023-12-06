@@ -1,4 +1,26 @@
+using System.Data.Common;
+
 namespace GO.Workerservice;
+
+public class OrderData
+{
+    public string DF_NDL { get; init; }
+    
+    public DateTime DF_DATAUFTANNAHME { get; init; }
+
+    public int DF_LFDNRAUFTRAG { get; init; }
+
+    public string DF_POD { get; init; }
+
+    public OrderData(DbDataReader reader)
+    {
+        DF_NDL = (string) reader[nameof(DF_NDL)];
+        DF_DATAUFTANNAHME = (DateTime) reader[nameof(DF_DATAUFTANNAHME)];
+        DF_LFDNRAUFTRAG = (int) reader[nameof(DF_LFDNRAUFTRAG)];
+        DF_POD = (string) reader[nameof(DF_POD)];
+    }
+}
+
 
 public class PackageData 
 {

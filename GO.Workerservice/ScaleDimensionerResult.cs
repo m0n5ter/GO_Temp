@@ -100,8 +100,8 @@ public sealed class ScaleDimensionerResult
         FromStation = Barcode[..3];
         ToStation = Barcode[3..6];
         LineNumber = Barcode[6..8];
-        OrderNumber = Barcode[8..20];
-        PackageNumber = Barcode[20..22];
+        OrderNumber = Barcode[8..20].TrimStart('0');
+        PackageNumber = Barcode[20..22].TrimStart('0');
 
         // TODO: The values below are probably wrong, need to test
 
