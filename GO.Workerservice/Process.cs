@@ -32,8 +32,9 @@ public class Process
                 await _databaseService.AddScanAsync(orderData, scan);
             }
 
-
             var totalWeight = await _databaseService.GetTotalWeightAsync(scan);
+            await _databaseService.SetTotalWeightAsync(orderData, totalWeight);
+
 
             _logger.LogInformation("Committing database transaction");
             await _databaseService.Commit();
