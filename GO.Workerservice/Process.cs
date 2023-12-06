@@ -19,8 +19,9 @@ public class Process
 
         try
         {
-            var packageData = await _databaseService.GetOrderAsync(scan);
+            var orderData = await _databaseService.GetOrderAsync(scan);
             var scanData = await _databaseService.GetScanAsync(scan);
+            var totalWeight = await _databaseService.GetTotalWeightAsync(scan);
 
             _logger.LogInformation("Committing database transaction");
             await _databaseService.Commit();

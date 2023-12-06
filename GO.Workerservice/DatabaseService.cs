@@ -85,7 +85,9 @@ ORDER BY df_datauftannahme DESC",
     public async Task<ScanData2?> GetScanAsync(ScaleDimensionerResult scan)
     {
         var cmd = BuildCommand(@$"
-SELECT * FROM DBA.TB_SCAN
+SELECT 
+  * 
+FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
   df_scandat between current date-{DAYS_TO_CONSIDER} AND current date AND
@@ -163,22 +165,26 @@ WHERE
     //    await cmd.ExecuteNonQueryAsync();
     //});
 
-    //public Task<int> GetWeightAsync() => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
-    //    cmd.CommandText = @"SELECT SUM(df_gewicht) AS totalweight
-    //                        FROM DBA.TB_SCAN
-    //                        where df_pod='068007339524'
-    //                        and df_scananlass=30
-    //                        and df_abstat='FRA'
-    //                        and df_empfstat='MUC'
-    //                        and df_linnr=53
-    //                        and df_scandat between current date-3 and current date;";
+    public async Task<double?> GetTotalWeightAsync(ScaleDimensionerResult scan)
+    {
+        var cmd = BuildCommand($@"
+SELECT 
+  SUM(df_gewicht) AS totalweight
+FROM DBA.TB_SCAN
+WHERE 
+  df_scananlass=30 AND
+  df_scandat between current date-{DAYS_TO_CONSIDER} and current date AND
+  df_pod=? AND
+  df_abstat=? AND
+  df_empfstat=? AND
+  df_linnr=?",
+            new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
+            new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
+            new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
+            new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber});
 
-    //    await cmd.ExecuteReaderAsync();
-
-    //    return 0;
-    //});
+        return await cmd.ExecuteScalarAsync() as double?;
+    }
 
     //public Task UpdateWeightAsync(int weight, string scanLocation, string date, string orderNumber) => Execute(async connection =>
     //{
