@@ -73,9 +73,9 @@ ORDER BY df_datauftannahme DESC", connection)
 SELECT * FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
-  df_packnr=1 AND 
   df_scandat between current date-{DAYS_TO_CONSIDER} AND current date AND
   df_pod=? AND 
+  df_packnr=? AND 
   df_abstat=? AND
   df_empfstat=? AND
   df_linnr=?
@@ -84,6 +84,7 @@ WHERE
             Parameters =
             {
                 new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
+                new("@PACKAGE_NUMBER", OdbcType.Int) {Value = scan.PackageNumber},
                 new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
                 new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
                 new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber}
