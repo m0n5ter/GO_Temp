@@ -62,20 +62,18 @@ public class DatabaseService
 
     public async Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan)
     {
-        var cmd = BuildCommand(@$"
+        var sql = @$"
 SELECT FIRST 
   *,
   (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat = df_abstat) zieldb1,
-  (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat=df_empfstat) zieldb,
-  current database origdb
+  (SELECT IF df_kz_go>0 then 'go'+lower(df_hstat) ELSE null ENDIF FROM dba.tb_stationen WHERE df_stat=df_empfstat) zieldb
 FROM DBA.TB_AUFTRAG
-WHERE df_pod=?
+WHERE df_pod='{scan.OrderNumber}'
   AND df_datauftannahme BETWEEN current date-{DAYS_TO_CONSIDER} AND current date
   AND df_abstat!='XXX' AND df_empfstat!='XXX'
-ORDER BY df_datauftannahme DESC",
-            new OdbcParameter("ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber});
+ORDER BY df_datauftannahme DESC";
 
-        await using var reader = await cmd.ExecuteReaderAsync();
+        await using var reader = await BuildCommand(sql).ExecuteReaderAsync();
 
         if (!reader.HasRows) return null;
         
@@ -86,33 +84,26 @@ ORDER BY df_datauftannahme DESC",
 
     public async Task<bool> ScanExistsAsync(ScaleDimensionerResult scan)
     {
-        var cmd = BuildCommand(@$"
+        var sql = @$"
 SELECT 
-  FIRST * 
+  FIRST df_pod 
 FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND 
   df_scandat between current date-{DAYS_TO_CONSIDER} AND current date AND
-  df_pod=? AND 
-  df_packnr=? AND 
-  df_abstat=? AND
-  df_empfstat=? AND
-  df_linnr=?
-  ",
-            new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
-            new("@PACKAGE_NUMBER", OdbcType.Int) {Value = scan.PackageNumber},
-            new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
-            new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
-            new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber});
-    
-        await using var reader = await cmd.ExecuteReaderAsync();
+  df_pod='{scan.OrderNumber}' AND 
+  df_packnr='{scan.PackageNumber}' AND 
+  df_abstat='{scan.FromStation}' AND
+  df_empfstat='{scan.ToStation}' AND
+  df_linnr='{scan.LineNumber}'";
 
-        return reader.HasRows;
+        await using var reader = await BuildCommand(sql).ExecuteReaderAsync();
+        return (await BuildCommand(sql).ExecuteReaderAsync()).HasRows;
     }
 
     public async Task AddScanAsync(OrderData order, ScaleDimensionerResult scan)
     {
-        var cmd = BuildCommand(@$"
+        var sql = @$"
 INSERT INTO DBA.TB_SCAN
     (DF_ABSTAT, DF_EMPFSTAT, DF_LINNR, DF_POD, DF_PACKNR, DF_SCANDAT, DF_SCANTIME,
     DF_SCANORT, DF_SCANANLASS, DF_ERRCODE, DF_PLATZNR, DF_USER, DF_GEWICHT, DF_KFZNR,
@@ -122,32 +113,28 @@ INSERT INTO DBA.TB_SCAN
 VALUES
     ('{scan.FromStation}', '{scan.ToStation}', '{scan.LineNumber}', '{scan.OrderNumber}', {scan.PackageNumber}, current date, current time, 
     '{_configuration.ScanLocation}', 30, '', 0, '{_configuration.ScanLocation}', {scan.Weight.ToString(CultureInfo.InvariantCulture)}, null,
-    current date, current database, null, null, 'RH6', null, current timestamp,
+    current date, current database, '{order.zieldb}', '{order.zieldb1}', '{order.DF_HUB}', null, current timestamp,
     0, 'N', null, '{_configuration.ScanLocation}', current date,
-    {order.DF_LFDNRAUFTRAG}, {scan.Length}, {scan.Width}, {scan.Height})");
+    {order.DF_LFDNRAUFTRAG}, {scan.Length}, {scan.Width}, {scan.Height})";
 
-        await cmd.ExecuteNonQueryAsync();
+        await BuildCommand(sql).ExecuteNonQueryAsync();
     }
 
     public async Task<decimal?> GetTotalWeightAsync(ScaleDimensionerResult scan)
     {
-        var cmd = BuildCommand($@"
+        var sql = $@"
 SELECT 
   SUM(df_gewicht) AS totalweight
 FROM DBA.TB_SCAN
 WHERE 
   df_scananlass=30 AND
   df_scandat between current date-{DAYS_TO_CONSIDER} and current date AND
-  df_pod=? AND
-  df_abstat=? AND
-  df_empfstat=? AND
-  df_linnr=?",
-            new("@ORDER_NUMBER", OdbcType.Text) {Value = scan.OrderNumber},
-            new("@FROM_STATION", OdbcType.Text) {Value = scan.FromStation},
-            new("@TO_STATION", OdbcType.Text) {Value = scan.ToStation},
-            new("@LINE_NUMBER", OdbcType.Text) {Value = scan.LineNumber});
+  df_pod='{scan.OrderNumber}' AND
+  df_abstat='{scan.FromStation}' AND
+  df_empfstat='{scan.ToStation}' AND
+  df_linnr='{scan.LineNumber}'";
 
-        return await cmd.ExecuteScalarAsync() as decimal?;
+        return await BuildCommand(sql).ExecuteScalarAsync() as decimal?;
     }
 
     //public Task UpdateWeightAsync(int weight, string scanLocation, string date, string orderNumber) => Execute(async connection =>

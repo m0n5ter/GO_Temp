@@ -8,6 +8,9 @@ public class OrderData
     public DateTime DF_DATAUFTANNAHME { get; init; }
     public int DF_LFDNRAUFTRAG { get; init; }
     public string DF_POD { get; init; }
+    public string DF_HUB { get; init; }
+    public string zieldb { get; init; }
+    public string zieldb1 { get; init; }
 
     public OrderData(DbDataReader reader)
     {
@@ -15,6 +18,9 @@ public class OrderData
         DF_DATAUFTANNAHME = (DateTime) reader[nameof(DF_DATAUFTANNAHME)];
         DF_LFDNRAUFTRAG = (int) reader[nameof(DF_LFDNRAUFTRAG)];
         DF_POD = (string) reader[nameof(DF_POD)];
+        DF_HUB = (string) reader[nameof(DF_HUB)];
+        zieldb = (string)reader[nameof(zieldb)];
+        zieldb1 = (string)reader[nameof(zieldb1)];
     }
 }
 
