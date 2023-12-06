@@ -15,26 +15,66 @@ public class Process
 
     public async Task ProcessPackageAsync(ScaleDimensionerResult scan)
     {
+        _logger.LogInformation("Starting database transaction");
         await _databaseService.Begin();
 
         try
         {
-            var orderData = await _databaseService.GetOrderAsync(scan);
+            var order = await _databaseService.GetOrderAsync(scan);
 
-            if (orderData == null)
-                return;
-
-
-            var scanExists = await _databaseService.ScanExistsAsync(scan);
-
-            if (!scanExists)
+            if (order == null)
             {
-                await _databaseService.AddScanAsync(orderData, scan);
+                _logger.LogInformation("Order was not found, exiting");
             }
+            else
+            {
+                _logger.LogInformation("Order located: {orderId}", order.DF_LFDNRAUFTRAG);
+                var isLocalOrder = order.DF_NDL == _configuration.ScanLocation;
+                var volumeFactor = _configuration.DefaultVolumeFactor;
 
-            var totalWeight = await _databaseService.GetTotalWeightAsync(scan);
-            await _databaseService.SetTotalWeightAsync(orderData, totalWeight);
+                if (isLocalOrder && _configuration.ExceptionList.TryGetValue(order.DF_KUNDENNR, out var customVolumeFactor))
+                {
+                    volumeFactor = customVolumeFactor;
+                    _logger.LogInformation("Using custom volume factor for local order and client {customer}: {volumeFactor}", order.DF_KUNDENNR, volumeFactor);
+                }
+                else
+                {
+                    _logger.LogInformation("Using default volume factor: {volumeFactor}", volumeFactor);
+                }
+                
+                if (!await _databaseService.ScanExistsAsync(scan))
+                {
+                    _logger.LogInformation("Scan didn't exist, adding");
+                    await _databaseService.AddScanAsync(order, scan);
+                }
+                else
+                {
+                    _logger.LogInformation("Scan with the same parameters already exists, updating");
+                    await _databaseService.UpdateScanAsync(scan);
+                }
 
+                if (!await _databaseService.PackageExistsAsync(order, scan))
+                {
+                    _logger.LogInformation("Package didn't exist, adding");
+                    await _databaseService.AddPackageAsync(order, scan, volumeFactor);
+                }
+                else
+                {
+                    _logger.LogInformation("Package with the same parameters already exists, updating");
+                    await _databaseService.UpdatePackageAsync(order, scan, volumeFactor);
+                }
+                
+                var realWeight = await _databaseService.GetTotalWeightAsync(scan);
+                var volumeWeight = await _databaseService.GetTotalVolumeWeightAsync(order);
+                var chargeableWeight = isLocalOrder ? Math.Max(realWeight, volumeWeight) : realWeight;
+
+                _logger.LogInformation("Updating order weights:");
+                _logger.LogInformation("    - Real weight: {realWeight}", realWeight);
+                _logger.LogInformation("    - Volume weight: {volumeWeight}", volumeWeight);
+                _logger.LogInformation("    - Chargeable weight: {chargeableWeight}", chargeableWeight);
+
+                await _databaseService.SetOrderWeightsAsync(order, realWeight, volumeWeight, chargeableWeight);
+            }
 
             _logger.LogInformation("Committing database transaction");
             await _databaseService.Commit();

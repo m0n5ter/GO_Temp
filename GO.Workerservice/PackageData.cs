@@ -11,6 +11,7 @@ public class OrderData
     public string DF_HUB { get; init; }
     public string zieldb { get; init; }
     public string zieldb1 { get; init; }
+    public int DF_KUNDENNR { get; init; }
 
     public OrderData(DbDataReader reader)
     {
@@ -19,6 +20,7 @@ public class OrderData
         DF_LFDNRAUFTRAG = (int) reader[nameof(DF_LFDNRAUFTRAG)];
         DF_POD = (string) reader[nameof(DF_POD)];
         DF_HUB = (string) reader[nameof(DF_HUB)];
+        DF_KUNDENNR = (int) reader[nameof(DF_KUNDENNR)];
         zieldb = (string)reader[nameof(zieldb)];
         zieldb1 = (string)reader[nameof(zieldb1)];
     }

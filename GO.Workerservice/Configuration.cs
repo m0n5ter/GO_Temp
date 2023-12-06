@@ -12,7 +12,7 @@ public sealed class Configuration
 
     public string ExceptionFilePath { get; set; } = "Exceptions.csv";
 
-    public float DefaultVolumeFactor { get; set; } = 1.0f;
+    public decimal DefaultVolumeFactor { get; set; } = 1.0m;
 
-    public Dictionary<string, float> ExceptionList { get; set; } = new();
+    public Dictionary<int, decimal> ExceptionList { get; set; } = new();
 }

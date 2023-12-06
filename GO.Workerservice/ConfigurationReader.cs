@@ -19,14 +19,16 @@ public static class ConfigurationReader
 
     private static void ReadExceptionFile(this Configuration configuration)
     {
-        using var sr = new StreamReader(configuration.ExceptionFilePath);
+        if (!File.Exists(configuration.ExceptionFilePath)) return;
 
-        while (sr.ReadLine() is { } line)
+        foreach (var line in File.ReadAllLines(configuration.ExceptionFilePath))
         {
             var parts = line.Split(';');
-            var customerNr = parts[0];
-            var volumeFactor = float.Parse(parts[1], CultureInfo.InvariantCulture.NumberFormat);
-            configuration.ExceptionList.Add(parts[0], volumeFactor);
+
+            if (parts.Length > 1
+                && int.TryParse(parts[0], out var customerNr)
+                && decimal.TryParse(parts[1], CultureInfo.InvariantCulture.NumberFormat, out var volumeFactor))
+                configuration.ExceptionList.Add(customerNr, volumeFactor);
         }
     }
 }

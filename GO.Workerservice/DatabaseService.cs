@@ -120,6 +120,27 @@ VALUES
         await BuildCommand(sql).ExecuteNonQueryAsync();
     }
 
+    public async Task UpdateScanAsync(ScaleDimensionerResult scan)
+    {
+        var sql = @$"
+UPDATE DBA.TB_SCAN SET
+  DF_GEWICHT={scan.Weight.ToString(CultureInfo.InvariantCulture)},
+  DF_LAENGE={scan.Length},
+  DF_BREITE={scan.Width},
+  DF_HOEHE={scan.Height},
+  DF_TIMESTAMP=current timestamp
+WHERE 
+  DF_SCANANLASS=30 AND 
+  DF_SCANDAT between current date-{DAYS_TO_CONSIDER} AND current date AND
+  DF_POD='{scan.OrderNumber}' AND 
+  DF_PACKNR='{scan.PackageNumber}' AND 
+  DF_ABSTAT='{scan.FromStation}' AND
+  DF_EMPFSTAT='{scan.ToStation}' AND
+  DF_LINNR='{scan.LineNumber}'";
+
+        await BuildCommand(sql).ExecuteNonQueryAsync();
+    }
+
     public async Task<decimal> GetTotalWeightAsync(ScaleDimensionerResult scan)
     {
         var sql = $@"
@@ -137,198 +158,77 @@ WHERE
         return await BuildCommand(sql).ExecuteScalarAsync() is decimal d ? d : 0;
     }
 
-    public async Task SetTotalWeightAsync(OrderData order, decimal totalWeight)
+    public async Task SetOrderWeightsAsync(OrderData order, decimal realWeight, decimal volumeWeight, decimal chargeableWeight)
     {
         var sql = @$"
-UPDATE 
-  DBA.TB_AUFTRAG 
-SET 
-  df_real_kg={totalWeight.ToString(CultureInfo.InvariantCulture)} 
+UPDATE DBA.TB_AUFTRAG SET 
+  DF_REAL_KG={realWeight.ToString(CultureInfo.InvariantCulture)},
+  DF_VOLKG=={volumeWeight.ToString(CultureInfo.InvariantCulture)},
+  DF_KG={chargeableWeight.ToString(CultureInfo.InvariantCulture)}
 WHERE 
   DF_NDL='{order.DF_NDL}' AND
   DF_DATAUFTANNAHME='{order.DF_DATAUFTANNAHME:yyyy-MM-dd}' AND
-  df_lfdnrauftrag={order.DF_LFDNRAUFTRAG}";
+  DF_LFDNRAUFTRAG={order.DF_LFDNRAUFTRAG}";
 
         await BuildCommand(sql).ExecuteNonQueryAsync();
     }
 
-    //public Task<bool> DoesPackageExistAsync(string scanLocation, string date, string orderNumber) => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
+    public async Task<bool> PackageExistsAsync(OrderData order, ScaleDimensionerResult scan)
+    {
+        var sql = $@"
+SELECT * 
+FROM DBA.TB_AUFTRAGSPACKSTUECK 
+WHERE 
+  DF_NDL='{order.DF_NDL}' AND
+  DF_DATAUFTANNAHME='{order.DF_DATAUFTANNAHME:yyyy-MM-dd}' AND
+  DF_LFDNRAUFTRAG={order.DF_LFDNRAUFTRAG} AND
+  DF_LFDNRPACK={scan.PackageNumber}";
 
-    //    cmd.CommandText = @"SELECT * FROM DBA.TB_AUFTRAGSPACKSTUECK
-    //                        where df_ndl='SCANLOCATION'
-    //                        and df_datauftannahme='DATE'
-    //                        and df_lfdnrauftrag=ORDERNUMBER
-    //                        and df_lfdnrpack = 1;";
+        return (await BuildCommand(sql).ExecuteReaderAsync()).HasRows;
+    }
+    
+    public async Task AddPackageAsync(OrderData order, ScaleDimensionerResult scan, decimal volumeFactor)
+    {
+        var sql = $@"
+INSERT INTO DBA.TB_AUFTRAGSPACKSTUECK 
+  (DF_NDL, DF_DATAUFTANNAHME, DF_LFDNRAUFTRAG, DF_LFDNRPACK,  DF_LAENGE, DF_BREITE, DF_HOEHE, DF_VOLKG, 
+  DF_HWB_NR, DF_ORIGDB, DF_ZIELDB, DF_REPLIKATION, DF_ZIELDB1, DF_TIMESTAMP) 
+VALUES 
+  ('{order.DF_NDL}', '{order.DF_DATAUFTANNAHME:yyyy-MM-dd}', {order.DF_LFDNRAUFTRAG}, {scan.PackageNumber}, {scan.Length}, {scan.Width}, {scan.Height}, {(scan.Volume / volumeFactor).ToString(CultureInfo.InvariantCulture)}, 
+  '{order.DF_POD}', current database, '{order.zieldb}', 1, '{order.zieldb1}', current timestamp)";
 
-    //    OdbcParameter scanLocationParam = new()
-    //    {
-    //        ParameterName = "@SCANLOCATION",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = scanLocation
-    //    };
+        await BuildCommand(sql).ExecuteNonQueryAsync();
+    }
 
-    //    OdbcParameter dateParam = new()
-    //    {
-    //        ParameterName = "@DATE",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = date
-    //    };
+    public async Task UpdatePackageAsync(OrderData order, ScaleDimensionerResult scan, decimal volumeFactor)
+    {
+        var sql = $@"
+UPDATE DBA.TB_AUFTRAGSPACKSTUECK SET
+  DF_VOLKG={(scan.Volume / volumeFactor).ToString(CultureInfo.InvariantCulture)},
+  DF_LAENGE={scan.Length},
+  DF_BREITE={scan.Width},
+  DF_HOEHE={scan.Height},
+  DF_TIMESTAMP=current timestamp
+WHERE 
+  DF_NDL='{order.DF_NDL}' AND
+  DF_DATAUFTANNAHME='{order.DF_DATAUFTANNAHME:yyyy-MM-dd}' AND
+  DF_LFDNRAUFTRAG={order.DF_LFDNRAUFTRAG} AND
+  DF_LFDNRPACK={scan.PackageNumber}";
 
-    //    OdbcParameter orderNumberParam = new()
-    //    {
-    //        ParameterName = "@ORDERNUMBER",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = orderNumber
-    //    };
+        await BuildCommand(sql).ExecuteNonQueryAsync();
+    }
 
-    //    cmd.Parameters.Add(scanLocationParam);
-    //    cmd.Parameters.Add(dateParam);
-    //    cmd.Parameters.Add(orderNumberParam);
+    public async Task<decimal> GetTotalVolumeWeightAsync(OrderData order)
+    {
+        var sql = $@"
+SELECT 
+  SUM(DF_VOLKG)
+FROM DBA.TB_AUFTRAGSPACKSTUECK 
+WHERE
+  DF_NDL='{order.DF_NDL}' AND
+  DF_DATAUFTANNAHME='{order.DF_DATAUFTANNAHME:yyyy-MM-dd}' AND
+  DF_LFDNRAUFTRAG={order.DF_LFDNRAUFTRAG}";
 
-    //    await using var reader = cmd.ExecuteReader();
-    //    return reader.HasRows;
-    //});
-
-    //public Task CreatePackageAsync(PackageData data, ScaleDimensionerResult scaleDimensionerResult, float volumeFactor) => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
-
-    //    cmd.CommandText = @"INSERT INTO DBA.TB_AUFTRAGSPACKSTUECK (df_ndl, df_datauftannahme,
-    //                        df_lfdnrauftrag, df_lfdnrpack, df_laenge, df_breite, df_hoehe, df_volkg, df_hwb_nr,
-    //                        df_origdb, df_zieldb, df_replikation, df_zieldb1, df_timestamp) VALUES ('TXL', '2019-
-    //                        02-12',551,1,61,51,41, 25.510, '068007339524', current database, 'gomuc', 1, 'gofra',
-    //                        current timestamp);";
-
-    //    await cmd.ExecuteNonQueryAsync();
-    //});
-
-    //public Task<int> GetTotalWeightAsync(string scanLocation, string date, string orderNumber) => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
-
-    //    cmd.CommandText = @"SELECT SUM(df_volkg) AS totalvolumeweight
-    //                        FROM DBA.TB_AUFTRAGSPACKSTUECK
-    //                        where df_ndl='SCANLOCATION'
-    //                        and df_datauftannahme='DATE'
-    //                        and df_lfdnrauftrag=ORDERNUMBER;";
-
-
-    //    OdbcParameter scanLocationParam = new()
-    //    {
-    //        ParameterName = "@SCANLOCATION",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = scanLocation
-    //    };
-
-    //    OdbcParameter dateParam = new()
-    //    {
-    //        ParameterName = "@DATE",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = date
-    //    };
-
-    //    OdbcParameter orderNumberParam = new()
-    //    {
-    //        ParameterName = "@ORDERNUMBER",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = orderNumber
-    //    };
-
-    //    cmd.Parameters.Add(scanLocationParam);
-    //    cmd.Parameters.Add(dateParam);
-    //    cmd.Parameters.Add(orderNumberParam);
-
-    //    await cmd.ExecuteReaderAsync();
-
-    //    return 0;
-    //});
-
-    //public Task UpdateTotalWeightAsync(int totalWeight, string scanLocation, string date, string orderNumber) => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
-
-    //    cmd.CommandText = @"UPDATE DBA.TB_AUFTRAG
-    //                        SET df_volkg = VOLUME
-    //                        WHERE df_ndl='SCANLOCATION'
-    //                        and df_datauftannahme='DATE'
-    //                        and df_lfdnrauftrag=ORDERNUMBER;";
-
-    //    OdbcParameter totalWeightParam = new()
-    //    {
-    //        ParameterName = "@WEIGHT",
-    //        DbType = System.Data.DbType.VarNumeric,
-    //        Value = totalWeight
-    //    };
-
-    //    OdbcParameter scanLocationParam = new()
-    //    {
-    //        ParameterName = "@SCANLOCATION",
-    //        DbType = System.Data.DbType.String,
-    //        Value = scanLocation
-    //    };
-
-    //    OdbcParameter dateParam = new()
-    //    {
-    //        ParameterName = "@DATE",
-    //        DbType = System.Data.DbType.String,
-    //        Value = date
-    //    };
-
-    //    OdbcParameter orderNumberParam = new()
-    //    {
-    //        ParameterName = "@ORDERNUMBER",
-    //        DbType = System.Data.DbType.String,
-    //        Value = orderNumber
-    //    };
-
-    //    cmd.Parameters.Add(totalWeightParam);
-    //    cmd.Parameters.Add(scanLocationParam);
-    //    cmd.Parameters.Add(dateParam);
-    //    cmd.Parameters.Add(orderNumberParam);
-
-    //    await cmd.ExecuteNonQueryAsync();
-    //});
-
-    //public Task UpdateOrderWeightAsync(int weight, string scanLocation, string date, string orderNumber) => Execute(async connection =>
-    //{
-    //    var cmd = connection.CreateCommand();
-
-    //    cmd.CommandText = @"UPDATE DBA.TB_AUFTRAG
-    //                        SET df__kg = WEIGHT
-    //                        WHERE df_ndl='SCANLOCATION'
-    //                        and df_datauftannahme='DATE'
-    //                        and df_lfdnrauftrag=ORDERNUMBER;";
-
-    //    cmd.Parameters.AddRange(new OdbcParameter[]
-    //    {
-    //        new()
-    //        {
-    //            ParameterName = "@WEIGHT",
-    //            DbType = System.Data.DbType.VarNumeric,
-    //            Value = weight
-    //        },
-    //        new()
-    //        {
-    //            ParameterName = "@SCANLOCATION",
-    //            DbType = System.Data.DbType.String,
-    //            Value = scanLocation
-    //        },
-    //        new()
-    //        {
-    //            ParameterName = "@DATE",
-    //            DbType = System.Data.DbType.String,
-    //            Value = date
-    //        },
-    //        new()
-    //        {
-    //            ParameterName = "@ORDERNUMBER",
-    //            DbType = System.Data.DbType.String,
-    //            Value = orderNumber
-    //        }
-    //    });
-
-    //    await cmd.ExecuteNonQueryAsync();
-    //});
+        return await BuildCommand(sql).ExecuteScalarAsync() is decimal d ? d : 0;
+    }
 }

@@ -74,7 +74,7 @@ public sealed class ScaleDimensionerResult
 
     public bool DimensionerLFT { get; }
 
-    public double Volume { get; }
+    public decimal Volume { get; }
     
     private static decimal TryParseDecimal(string s, string name) => decimal.TryParse(s, CultureInfo.InvariantCulture, out var d) ? d : throw new Exception($"Failed to parse {name}: {s}");
 
