@@ -163,7 +163,7 @@ WHERE
         var sql = @$"
 UPDATE DBA.TB_AUFTRAG SET 
   DF_REAL_KG={realWeight.ToString(CultureInfo.InvariantCulture)},
-  DF_VOLKG=={volumeWeight.ToString(CultureInfo.InvariantCulture)},
+  DF_VOLKG={volumeWeight.ToString(CultureInfo.InvariantCulture)},
   DF_KG={chargeableWeight.ToString(CultureInfo.InvariantCulture)}
 WHERE 
   DF_NDL='{order.DF_NDL}' AND
