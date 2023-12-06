@@ -56,6 +56,8 @@ public sealed class ScaleDimensionerResult
 
     public string OrderNumber { get; }
 
+    public int PackageNumber { get; }
+
     public string ToStation { get; set; }
 
     public string FromStation { get; }
@@ -101,7 +103,7 @@ public sealed class ScaleDimensionerResult
         ToStation = Barcode[3..6];
         LineNumber = Barcode[6..8];
         OrderNumber = Barcode[8..20].TrimStart('0');
-        PackageNumber = Barcode[20..22].TrimStart('0');
+        PackageNumber = int.TryParse(Barcode[20..22], out var packageNumber) ? packageNumber : throw new Exception($"Unexpected package number: {Barcode[20..22]}");
 
         // TODO: The values below are probably wrong, need to test
 
@@ -111,6 +113,4 @@ public sealed class ScaleDimensionerResult
         ScaleLFT = data[88] == '1';
         DimensionerLFT = data[89] == '1';
     }
-
-    public string PackageNumber { get; set; }
 }
