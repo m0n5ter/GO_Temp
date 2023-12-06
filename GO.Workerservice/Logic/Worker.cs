@@ -19,12 +19,14 @@ public class Worker : BackgroundService
 
         var displayPassword = configuration.DatabaseConfiguration.Password is null ? "-" : "***********";
 
-        _logger.LogDebug("DatabaseConfiguration: \n\t" +
-            $"Host: {configuration.DatabaseConfiguration.Host} \n\t" +
-            $"Username: {configuration.DatabaseConfiguration.Username} \n\t" +
-            $"Password: {displayPassword} \n\t" +
-            $"Database: {configuration.DatabaseConfiguration.Database} \n\t" +
-            $"Engine: {configuration.DatabaseConfiguration.Engine}\n");
+        _logger.LogInformation("============== GO Workerservice is starting up ==============");
+
+        _logger.LogInformation("DatabaseConfiguration:");
+        _logger.LogInformation($"    - Host: {configuration.DatabaseConfiguration.Host}");
+        _logger.LogInformation($"    - Database: {configuration.DatabaseConfiguration.Database}");
+        _logger.LogInformation($"    - Engine: {configuration.DatabaseConfiguration.Engine}");
+        _logger.LogInformation($"    - Username: {configuration.DatabaseConfiguration.Username}");
+        _logger.LogInformation($"    - Password: {displayPassword}");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -35,7 +37,7 @@ public class Worker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+            _logger.LogInformation("Worker running at: {time}", DateTime.Now);
             await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
         }
     }

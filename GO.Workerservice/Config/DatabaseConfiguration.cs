@@ -12,5 +12,5 @@ public sealed class DatabaseConfiguration
 
     public required string Engine { get; set; } = "test";
 
-    public string ConnectionString => $@"Driver={{SQL Anywhere 10}};DatabaseName={Database};EngineName={Engine};uid={Username};pwd={Password};LINKs=tcpip(host={Host})";
+    public string ConnectionString => $"Driver={{SQL Anywhere 10}};DatabaseName={Database};EngineName={Engine};uid={Username};pwd={Password};LINKs=tcpip(host={Host})";
 }

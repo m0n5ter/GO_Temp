@@ -7,7 +7,7 @@ namespace GO.Workerservice.Data;
 
 public class DatabaseService
 {
-    private const int DAYS_TO_CONSIDER = 100;
+    private const int DAYS_TO_CONSIDER = 3;
 
     private readonly Configuration _configuration;
     private readonly ILogger<DatabaseService> _logger;
