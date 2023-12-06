@@ -254,7 +254,7 @@ WHERE
         return reader.HasRows;
     });
 
-    public async Task CreatePackageAsync(PackageData data, ScaleDimensionerResult scaleDimensionerResult, float volumeFactor) => Execute(async connection =>
+    public Task CreatePackageAsync(PackageData data, ScaleDimensionerResult scaleDimensionerResult, float volumeFactor) => Execute(async connection =>
     {
         var cmd = connection.CreateCommand();
 
