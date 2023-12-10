@@ -60,7 +60,7 @@ public sealed class ScaleDimensionerResult
 
     public ScaleDimensionerResult(string data)
     {
-        if (data.Length != 92) throw new Exception($"Unexpected message length: {data.Length}");
+        if (data.Length != 91) throw new Exception($"Unexpected message length: {data.Length}");
 
         if (data[0] != 'W') throw new Exception("Weight flag missing");
         if (data[7] != 'V') throw new Exception("Volume flag missing");
