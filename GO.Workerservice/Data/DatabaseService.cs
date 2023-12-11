@@ -193,7 +193,7 @@ INSERT INTO DBA.TB_AUFTRAGSPACKSTUECK
   (DF_NDL, DF_DATAUFTANNAHME, DF_LFDNRAUFTRAG, DF_LFDNRPACK,  DF_LAENGE, DF_BREITE, DF_HOEHE, DF_VOLKG, 
   DF_HWB_NR, DF_ORIGDB, DF_ZIELDB, DF_REPLIKATION, DF_ZIELDB1, DF_TIMESTAMP) 
 VALUES 
-  ('{order.DF_NDL}', '{order.DF_DATAUFTANNAHME:yyyy-MM-dd}', {order.DF_LFDNRAUFTRAG}, {scan.PackageNumber}, {scan.Length}, {scan.Width}, {scan.Height}, {(scan.Volume / volumeFactor).ToString(CultureInfo.InvariantCulture)}, 
+  ('{order.DF_NDL}', '{order.DF_DATAUFTANNAHME:yyyy-MM-dd}', {order.DF_LFDNRAUFTRAG}, {scan.PackageNumber}, {scan.Length}, {scan.Width}, {scan.Height}, {(scan.VolumeM3 / volumeFactor).ToString(CultureInfo.InvariantCulture)}, 
   '{order.DF_POD}', current database, '{order.zieldb}', 1, '{order.zieldb1}', current timestamp)";
 
         await BuildCommand(sql).ExecuteNonQueryAsync();
@@ -203,7 +203,7 @@ VALUES
     {
         var sql = $@"
 UPDATE DBA.TB_AUFTRAGSPACKSTUECK SET
-  DF_VOLKG={(scan.Volume / volumeFactor).ToString(CultureInfo.InvariantCulture)},
+  DF_VOLKG={(scan.VolumeM3 / volumeFactor).ToString(CultureInfo.InvariantCulture)},
   DF_LAENGE={scan.Length},
   DF_BREITE={scan.Width},
   DF_HOEHE={scan.Height},

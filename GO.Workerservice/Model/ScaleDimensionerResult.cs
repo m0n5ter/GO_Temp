@@ -50,13 +50,13 @@ public sealed class ScaleDimensionerResult
 
     public bool DimensionerLFT { get; }
 
-    public decimal Volume { get; }
+    public decimal VolumeM3 { get; }
     
     private static decimal TryParseDecimal(string s, string name) => decimal.TryParse(s, CultureInfo.InvariantCulture, out var d) ? d : throw new Exception($"Failed to parse {name}: {s}");
 
     private static int TryParseInt(string s, string name) => int.TryParse(s, CultureInfo.InvariantCulture, out var i) ? i : throw new Exception($"Failed to parse {name}: {s}");
 
-    public override string ToString() => $"{FromStation}==>{ToStation}({LineNumber})|{OrderNumber}:{PackageNumber}|{Width}x{Length}x{Height}cm|{Volume}cm3|{Weight}kg";
+    public override string ToString() => $"{FromStation}==>{ToStation}({LineNumber})|{OrderNumber}:{PackageNumber}|{Width}x{Length}x{Height}cm|{VolumeM3}m3|{Weight}kg";
 
     public ScaleDimensionerResult(string data)
     {
@@ -72,7 +72,7 @@ public sealed class ScaleDimensionerResult
         Width = TryParseInt(data[12..16], nameof(Width));
         Height = TryParseInt(data[16..20], nameof(Height));
         
-        Volume = Width * Height * Length;
+        VolumeM3 = Width * Height * Length / 1000000;
 
         Barcode = data[41..81].TrimStart('#', ' ');
         if (Barcode.Length != 22) throw new Exception($"Unexpected barcode length: {Barcode.Length}");
