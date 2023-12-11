@@ -114,7 +114,7 @@ VALUES
   '{_configuration.ScanLocation}', 30, null, 0, '{_configuration.ScanLocation}', {scan.Weight.ToString(CultureInfo.InvariantCulture)}, null,
   current date, current database, '{order.zieldb}', '{order.zieldb1}', '{order.DF_HUB}', null, current timestamp,
   0, 'N', null, '{order.DF_NDL}', current date,
-  {order.DF_LFDNRAUFTRAG}, {scan.Length}, {scan.Width}, {scan.Height})";
+  {order.DF_LFDNRAUFTRAG}, {scan.LengthCm}, {scan.WidthCm}, {scan.HeightCm})";
 
         await BuildCommand(sql).ExecuteNonQueryAsync();
     }
@@ -124,9 +124,9 @@ VALUES
         var sql = @$"
 UPDATE DBA.TB_SCAN SET
   DF_GEWICHT={scan.Weight.ToString(CultureInfo.InvariantCulture)},
-  DF_LAENGE={scan.Length},
-  DF_BREITE={scan.Width},
-  DF_HOEHE={scan.Height},
+  DF_LAENGE={scan.LengthCm},
+  DF_BREITE={scan.WidthCm},
+  DF_HOEHE={scan.HeightCm},
   DF_TIMESTAMP=current timestamp
 WHERE 
   DF_SCANANLASS=30 AND 
@@ -193,7 +193,7 @@ INSERT INTO DBA.TB_AUFTRAGSPACKSTUECK
   (DF_NDL, DF_DATAUFTANNAHME, DF_LFDNRAUFTRAG, DF_LFDNRPACK,  DF_LAENGE, DF_BREITE, DF_HOEHE, DF_VOLKG, 
   DF_HWB_NR, DF_ORIGDB, DF_ZIELDB, DF_REPLIKATION, DF_ZIELDB1, DF_TIMESTAMP) 
 VALUES 
-  ('{order.DF_NDL}', '{order.DF_DATAUFTANNAHME:yyyy-MM-dd}', {order.DF_LFDNRAUFTRAG}, {scan.PackageNumber}, {scan.Length}, {scan.Width}, {scan.Height}, {(scan.VolumeM3 / volumeFactor).ToString(CultureInfo.InvariantCulture)}, 
+  ('{order.DF_NDL}', '{order.DF_DATAUFTANNAHME:yyyy-MM-dd}', {order.DF_LFDNRAUFTRAG}, {scan.PackageNumber}, {scan.LengthCm}, {scan.WidthCm}, {scan.HeightCm}, {(scan.VolumeM3 / volumeFactor).ToString(CultureInfo.InvariantCulture)}, 
   '{order.DF_POD}', current database, '{order.zieldb}', 1, '{order.zieldb1}', current timestamp)";
 
         await BuildCommand(sql).ExecuteNonQueryAsync();
@@ -204,9 +204,9 @@ VALUES
         var sql = $@"
 UPDATE DBA.TB_AUFTRAGSPACKSTUECK SET
   DF_VOLKG={(scan.VolumeM3 / volumeFactor).ToString(CultureInfo.InvariantCulture)},
-  DF_LAENGE={scan.Length},
-  DF_BREITE={scan.Width},
-  DF_HOEHE={scan.Height},
+  DF_LAENGE={scan.LengthCm},
+  DF_BREITE={scan.WidthCm},
+  DF_HOEHE={scan.HeightCm},
   DF_TIMESTAMP=current timestamp
 WHERE 
   DF_NDL='{order.DF_NDL}' AND
