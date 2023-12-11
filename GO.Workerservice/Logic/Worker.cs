@@ -48,6 +48,8 @@ public class Worker : BackgroundService
     {
         try
         {
+            if (string.IsNullOrEmpty(e) || e.All(c => c == 0)) return;
+
             using var scope = _serviceProvider.CreateScope();
             var process = scope.ServiceProvider.GetRequiredService<Process>();
             _logger.LogInformation("New MQTT message received: {0}", e);
