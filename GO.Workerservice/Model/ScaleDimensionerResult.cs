@@ -66,13 +66,13 @@ public sealed class ScaleDimensionerResult
         if (data[7] != 'V') throw new Exception("Volume flag missing");
         if (data[20] != 'B') throw new Exception("Barcode flag missing");
 
-        Weight = TryParseDecimal(data[1..6], nameof(Weight));
+        Weight = TryParseDecimal(data[1..7], nameof(Weight));
         
         Length = TryParseInt(data[8..12], nameof(Length));
         Width = TryParseInt(data[12..16], nameof(Width));
         Height = TryParseInt(data[16..20], nameof(Height));
         
-        VolumeM3 = Width * Height * Length / 1000000;
+        VolumeM3 = Width * Height * Length / 1000000m;
 
         Barcode = data[41..81].TrimStart('#', ' ');
         if (Barcode.Length != 22) throw new Exception($"Unexpected barcode length: {Barcode.Length}");
