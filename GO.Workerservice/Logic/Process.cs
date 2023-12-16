@@ -80,10 +80,10 @@ public class Process(Configuration configuration, DatabaseService databaseServic
             await databaseService.Commit();
             
             var endTime = sw.Elapsed;
-            logger.LogInformation("Processing completed in {time}ms", endTime.TotalMilliseconds);
+            logger.LogInformation("Processing completed in {time:0} ms", endTime.TotalMilliseconds);
             
             if (endTime.TotalMilliseconds > 300)
-                logger.LogWarning("Processing time exceeded 300ms");
+                logger.LogWarning("Processing time exceeded 300 ms");
         }
         catch
         {
