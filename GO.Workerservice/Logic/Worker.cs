@@ -38,8 +38,18 @@ public class Worker : BackgroundService
 
         using (var scope = _serviceProvider.CreateScope())
         {
-            var lastOrderDate = await scope.ServiceProvider.GetRequiredService<DatabaseService>().GetLastOrderDateAsync();
-            _logger.LogInformation("Latest order in the database is of: {lastOrderDate}", lastOrderDate?.ToString() ?? "No orders");
+            var db = scope.ServiceProvider.GetRequiredService<DatabaseService>();
+            await db.Begin();
+
+            try
+            {
+                var lastOrderDate = await db.GetLastOrderDateAsync();
+                _logger.LogInformation("Latest order in the database is of: {lastOrderDate}", lastOrderDate?.ToString() ?? "No orders");
+            }
+            finally
+            {
+                await db.Rollback();
+            }
         }
 
         while (!stoppingToken.IsCancellationRequested)
