@@ -57,6 +57,7 @@ public class DatabaseService(Configuration configuration, ILogger<DatabaseServic
         var sql = @$"
 SELECT FIRST DF_DATAUFTANNAHME
 FROM DBA.TB_AUFTRAG
+WHERE DF_DATAUFTANNAHME <= current date
 ORDER BY DF_DATAUFTANNAHME DESC";
 
         return await BuildCommand(sql).ExecuteScalarAsync() as DateTime?;

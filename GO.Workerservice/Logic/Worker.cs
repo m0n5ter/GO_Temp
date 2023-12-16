@@ -32,10 +32,6 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await StartBroker();
-        await _client.Connect(stoppingToken);
-        _client.OnReceivingMessage += OnMessageReceived;
-
         using (var scope = _serviceProvider.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<DatabaseService>();
@@ -44,7 +40,7 @@ public class Worker : BackgroundService
             try
             {
                 var lastOrderDate = await db.GetLastOrderDateAsync();
-                _logger.LogInformation("Latest order in the database is of: {lastOrderDate}", lastOrderDate?.ToString() ?? "No orders");
+                _logger.LogInformation("Latest order date in the database: {lastOrderDate}", lastOrderDate?.ToShortDateString() ?? "No orders");
             }
             finally
             {
@@ -52,9 +48,13 @@ public class Worker : BackgroundService
             }
         }
 
+        await StartBroker();
+        await _client.Connect(stoppingToken);
+        _client.OnReceivingMessage += OnMessageReceived;
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Worker running at: {time}", DateTime.Now);
+            _logger.LogInformation("Heartbeat: Worker is running at: {time}", DateTime.Now.ToString());
             await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
         }
     }
