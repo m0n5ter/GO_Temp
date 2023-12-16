@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using GO.Workerservice.Config;
 using GO.Workerservice.Data;
 using GO.Workerservice.Model;
@@ -8,6 +9,8 @@ public class Process(Configuration configuration, DatabaseService databaseServic
 {
     public async Task ProcessPackageAsync(string message)
     {
+        var sw = Stopwatch.StartNew();
+        
         var scan = new ScaleDimensionerResult(message);
         
         logger.LogInformation("Processing scan: {scan}", scan);
@@ -75,6 +78,12 @@ public class Process(Configuration configuration, DatabaseService databaseServic
 
             logger.LogInformation("Committing database transaction");
             await databaseService.Commit();
+            
+            var endTime = sw.Elapsed;
+            logger.LogInformation("Processing completed in {time}ms", endTime.TotalMilliseconds);
+            
+            if (endTime.TotalMilliseconds > 300)
+                logger.LogWarning("Processing time exceeded 300ms");
         }
         catch
         {
