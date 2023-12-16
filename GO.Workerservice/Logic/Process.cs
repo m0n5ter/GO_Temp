@@ -4,141 +4,83 @@ using GO.Workerservice.Model;
 
 namespace GO.Workerservice.Logic;
 
-public class Process 
+public class Process(Configuration configuration, DatabaseService databaseService, ILogger<Process> logger)
 {
-    private readonly DatabaseService _databaseService;
-    private readonly Configuration _configuration;
-    private readonly ILogger<Process> _logger;
-
-    public Process(Configuration configuration, DatabaseService databaseService, ILogger<Process> logger) 
-    {
-        _configuration = configuration;
-        _databaseService = databaseService;
-        _logger = logger;
-    }
-
     public async Task ProcessPackageAsync(string message)
     {
         var scan = new ScaleDimensionerResult(message);
         
-        _logger.LogInformation("Processing scan: {scan}", scan);
-        _logger.LogInformation("Starting database transaction");
+        logger.LogInformation("Processing scan: {scan}", scan);
+        logger.LogInformation("Starting database transaction");
 
-        await _databaseService.Begin();
+        await databaseService.Begin();
 
         try
         {
-            var order = await _databaseService.GetOrderAsync(scan);
+            var order = await databaseService.GetOrderAsync(scan);
 
             if (order == null)
             {
-                _logger.LogInformation("Order was not found, exiting");
+                logger.LogWarning("Order was not found, exiting");
             }
             else
             {
-                _logger.LogInformation("Order located: {orderId}", order.DF_LFDNRAUFTRAG);
-                var isLocalOrder = order.DF_NDL == _configuration.ScanLocation;
-                var volumeFactor = _configuration.DefaultVolumeFactor;
+                logger.LogInformation("Order located: {orderId}", order.DF_LFDNRAUFTRAG);
+                var isLocalOrder = order.DF_NDL == configuration.ScanLocation;
+                var volumeFactor = configuration.DefaultVolumeFactor;
 
-                if (isLocalOrder && _configuration.ExceptionList.TryGetValue(order.DF_KUNDENNR, out var customVolumeFactor))
+                if (isLocalOrder && configuration.ExceptionList.TryGetValue(order.DF_KUNDENNR, out var customVolumeFactor))
                 {
                     volumeFactor = customVolumeFactor;
-                    _logger.LogInformation("Using custom volume factor for local order and client {customer}: {volumeFactor}", order.DF_KUNDENNR, volumeFactor);
+                    logger.LogInformation("Using custom volume factor for local order and client {customer}: {volumeFactor}", order.DF_KUNDENNR, volumeFactor);
                 }
                 else
                 {
-                    _logger.LogInformation("Using default volume factor: {volumeFactor}", volumeFactor);
+                    logger.LogInformation("Using default volume factor: {volumeFactor}", volumeFactor);
                 }
                 
-                if (!await _databaseService.ScanExistsAsync(scan))
+                if (!await databaseService.ScanExistsAsync(scan))
                 {
-                    _logger.LogInformation("Scan didn't exist, adding");
-                    await _databaseService.AddScanAsync(order, scan);
+                    logger.LogInformation("Scan didn't exist, adding");
+                    await databaseService.AddScanAsync(order, scan);
                 }
                 else
                 {
-                    _logger.LogInformation("Scan with the same parameters already exists, updating");
-                    await _databaseService.UpdateScanAsync(scan);
+                    logger.LogInformation("Scan with the same parameters already exists, updating");
+                    await databaseService.UpdateScanAsync(scan);
                 }
 
-                if (!await _databaseService.PackageExistsAsync(order, scan))
+                if (!await databaseService.PackageExistsAsync(order, scan))
                 {
-                    _logger.LogInformation("Package didn't exist, adding");
-                    await _databaseService.AddPackageAsync(order, scan, volumeFactor);
+                    logger.LogInformation("Package didn't exist, adding");
+                    await databaseService.AddPackageAsync(order, scan, volumeFactor);
                 }
                 else
                 {
-                    _logger.LogInformation("Package with the same parameters already exists, updating");
-                    await _databaseService.UpdatePackageAsync(order, scan, volumeFactor);
+                    logger.LogInformation("Package with the same parameters already exists, updating");
+                    await databaseService.UpdatePackageAsync(order, scan, volumeFactor);
                 }
                 
-                var realWeight = await _databaseService.GetTotalWeightAsync(scan);
-                var volumeWeight = await _databaseService.GetTotalVolumeWeightAsync(order);
+                var realWeight = await databaseService.GetTotalWeightAsync(scan);
+                var volumeWeight = await databaseService.GetTotalVolumeWeightAsync(order);
                 var chargeableWeight = isLocalOrder ? Math.Max(realWeight, volumeWeight) : realWeight;
 
-                _logger.LogInformation("Updating order weights:");
-                _logger.LogInformation("    - Real weight: {realWeight}", realWeight);
-                _logger.LogInformation("    - Volume weight: {volumeWeight}", volumeWeight);
-                _logger.LogInformation("    - Chargeable weight: {chargeableWeight}", chargeableWeight);
+                logger.LogInformation("Updating order weights:");
+                logger.LogInformation("    - Real weight: {realWeight}", realWeight);
+                logger.LogInformation("    - Volume weight: {volumeWeight}", volumeWeight);
+                logger.LogInformation("    - Chargeable weight: {chargeableWeight}", chargeableWeight);
 
-                await _databaseService.SetOrderWeightsAsync(order, realWeight, volumeWeight, chargeableWeight);
+                await databaseService.SetOrderWeightsAsync(order, realWeight, volumeWeight, chargeableWeight);
             }
 
-            _logger.LogInformation("Committing database transaction");
-            await _databaseService.Commit();
+            logger.LogInformation("Committing database transaction");
+            await databaseService.Commit();
         }
         catch
         {
-            await _databaseService.Rollback();
-            _logger.LogWarning("Transaction has been rolled back, no changes were made to the database");
+            await databaseService.Rollback();
+            logger.LogWarning("Transaction has been rolled back, no changes were made to the database");
             throw;
         }
-
-            //var scanLocation = packageData.df_ndl;
-            //var date = packageData.df_datauftannahme;
-            //var orderNumber = packageData.df_lfdnrauftrag;
-
-            //if (scanData == null)
-            //{
-            //    await _databaseService.AddScanAsync(scan, packageData); // 3
-
-            //    var realWeight = await _databaseService.GetWeightAsync(); // 4
-
-            //    if (realWeight == null) return;
-
-            //    await _databaseService.UpdateWeightAsync((int) realWeight, scanLocation, date, orderNumber); // 5
-
-            //    var packageExists = await _databaseService.DoesPackageExistAsync(scanLocation, date, orderNumber); // 6
-
-            //    if (packageExists == null) return;
-
-            //    float volumeFactor;
-
-            //    if (packageData.df_ndl == _configuration.ScanLocation // 7
-            //        && _configuration.ExceptionList!.ContainsKey(packageData.df_kundennr)) 
-            //    {
-            //        volumeFactor = _configuration.ExceptionList[packageData.df_kundennr];
-            //    } else {
-            //        volumeFactor = _configuration.DefaultVolumeFactor;
-            //    }
-
-            //    await _databaseService.CreatePackageAsync(packageData, scan, volumeFactor); // 8
-
-            //    var volumeWeight = await _databaseService.GetTotalWeightAsync(packageData.df_ndl,   // 9
-            //                                                                      packageData.df_datauftannahme, 
-            //                                                                      packageData.df_lfdnrauftrag);
-
-            //    if (volumeWeight == null) return;
-
-            //    await _databaseService.UpdateTotalWeightAsync((int) volumeWeight, scanLocation, date, orderNumber);
-
-            //    var weight = (int) realWeight;
-
-            //    if (packageData.df_ndl == _configuration.ScanLocation && volumeWeight > realWeight) {
-            //        weight = (int) volumeWeight;
-            //    } 
-
-            //    await _databaseService.UpdateOrderWeightAsync((int) realWeight, scanLocation, date, orderNumber);
-            //}
     }
 }

@@ -1,4 +1,5 @@
 using GO.Workerservice.Config;
+using GO.Workerservice.Data;
 using GO.Workerservice.Mqtt;
 
 namespace GO.Workerservice.Logic;
@@ -34,6 +35,12 @@ public class Worker : BackgroundService
         await StartBroker();
         await _client.Connect(stoppingToken);
         _client.OnReceivingMessage += OnMessageReceived;
+
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var lastOrderDate = await scope.ServiceProvider.GetRequiredService<DatabaseService>().GetLastOrderDateAsync();
+            _logger.LogInformation("Latest order in the database is of: {lastOrderDate}", lastOrderDate?.ToString() ?? "No orders");
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {

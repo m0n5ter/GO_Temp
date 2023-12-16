@@ -5,24 +5,17 @@ using GO.Workerservice.Model;
 
 namespace GO.Workerservice.Data;
 
-public class DatabaseService
+public class DatabaseService(Configuration configuration, ILogger<DatabaseService> logger)
 {
     private const int DAYS_TO_CONSIDER = 3;
 
-    private readonly Configuration _configuration;
-    private readonly ILogger<DatabaseService> _logger;
+    private readonly ILogger<DatabaseService> _logger = logger;
     private OdbcConnection? _connection;
     private OdbcTransaction? _transaction;
 
-    public DatabaseService(Configuration configuration, ILogger<DatabaseService> logger)
-    {
-        _configuration = configuration;
-        _logger = logger;
-    }
-
     public async Task Begin()
     {
-        _connection = new OdbcConnection {ConnectionString = _configuration.DatabaseConfiguration.ConnectionString};
+        _connection = new OdbcConnection {ConnectionString = configuration.DatabaseConfiguration.ConnectionString};
         await _connection.OpenAsync();
         _transaction = (OdbcTransaction?) await _connection.BeginTransactionAsync();
     }
@@ -57,6 +50,16 @@ public class DatabaseService
         var command = new OdbcCommand(sql, _connection, _transaction);
         command.Parameters.AddRange(parameters);
         return command;
+    }
+
+    public async Task<DateTime?> GetLastOrderDateAsync()
+    {
+        var sql = @$"
+SELECT FIRST DF_DATAUFTANNAHME
+FROM DBA.TB_AUFTRAG
+ORDER BY DF_DATAUFTANNAHME DESC";
+
+        return await BuildCommand(sql).ExecuteScalarAsync() as DateTime?;
     }
 
     public async Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan)
@@ -111,7 +114,7 @@ INSERT INTO DBA.TB_SCAN
   DF_LFDNRAUFTRAG, DF_LAENGE, DF_BREITE, DF_HOEHE)
 VALUES
   ('{scan.FromStation}', '{scan.ToStation}', '{scan.LineNumber}', '{scan.OrderNumber}', {scan.PackageNumber}, current date, current time, 
-  '{_configuration.ScanLocation}', 30, null, 0, '{_configuration.ScanLocation}', {scan.Weight.ToString(CultureInfo.InvariantCulture)}, null,
+  '{configuration.ScanLocation}', 30, null, 0, '{configuration.ScanLocation}', {scan.Weight.ToString(CultureInfo.InvariantCulture)}, null,
   current date, current database, '{order.zieldb}', '{order.zieldb1}', '{order.DF_HUB}', null, current timestamp,
   0, 'N', null, '{order.DF_NDL}', current date,
   {order.DF_LFDNRAUFTRAG}, {scan.LengthCm}, {scan.WidthCm}, {scan.HeightCm})";
