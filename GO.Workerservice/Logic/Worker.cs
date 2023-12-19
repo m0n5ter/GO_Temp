@@ -42,6 +42,15 @@ public class Worker : BackgroundService
                 var lastOrderDate = await db.GetLastOrderDateAsync();
                 _logger.LogInformation("Latest order date in the database: {lastOrderDate}", lastOrderDate?.ToShortDateString() ?? "No orders");
             }
+            catch (Exception exception)
+            {
+#if DEBUG
+                throw;
+#else
+                _logger.LogError(exception, "Initial call to the database failed");
+#endif
+            }
+            
             finally
             {
                 await db.Rollback();
