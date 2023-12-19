@@ -32,28 +32,34 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using (var scope = _serviceProvider.CreateScope())
+        while (true)
         {
+            using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<DatabaseService>();
-            await db.Begin();
 
             try
             {
-                var lastOrderDate = await db.GetLastOrderDateAsync();
-                _logger.LogInformation("Latest order date in the database: {lastOrderDate}", lastOrderDate?.ToShortDateString() ?? "No orders");
+                await db.Begin();
+
+                try
+                {
+                    var lastOrderDate = await db.GetLastOrderDateAsync();
+                    _logger.LogInformation("Latest order date in the database: {lastOrderDate}", lastOrderDate?.ToShortDateString() ?? "No orders");
+                    break;
+                }
+                finally
+                {
+                    await db.Rollback();
+                }
             }
             catch (Exception exception)
             {
 #if DEBUG
                 throw;
 #else
-                _logger.LogError(exception, "Initial call to the database failed");
+                _logger.LogError(exception, "Initial call to the database failed, retrying in 30 seconds...");
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 #endif
-            }
-            
-            finally
-            {
-                await db.Rollback();
             }
         }
 
