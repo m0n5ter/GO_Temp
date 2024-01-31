@@ -15,7 +15,7 @@ public class DatabaseService(Configuration configuration, ILogger<DatabaseServic
 
     public async Task Begin()
     {
-        _connection = new OdbcConnection {ConnectionString = configuration.DatabaseConfiguration.ConnectionString};
+        _connection = new OdbcConnection("DSN=godus");
         await _connection.OpenAsync();
         _transaction = (OdbcTransaction?) await _connection.BeginTransactionAsync();
     }
@@ -63,7 +63,7 @@ ORDER BY DF_DATAUFTANNAHME DESC";
         return await BuildCommand(sql).ExecuteScalarAsync() as DateTime?;
     }
 
-    public async Task<OrderData?> GetOrderAsync(ScaleDimensionerResult scan)
+    public async Task<OrderData?> GetOrderAsync(string orderNumber)
     {
         var sql = @$"
 SELECT FIRST 
@@ -71,7 +71,7 @@ SELECT FIRST
   (SELECT IF DF_KZ_GO>0 then 'go'+lower(DF_HSTAT) ELSE null ENDIF FROM DBA.TB_STATIONEN WHERE DF_STAT = DF_ABSTAT) zieldb1,
   (SELECT IF DF_KZ_GO>0 then 'go'+lower(DF_HSTAT) ELSE null ENDIF FROM DBA.TB_STATIONEN WHERE DF_STAT=DF_EMPFSTAT) zieldb
 FROM DBA.TB_AUFTRAG
-WHERE DF_POD='{scan.OrderNumber}'
+WHERE DF_POD='{orderNumber}'
   AND DF_DATAUFTANNAHME BETWEEN current date-{DAYS_TO_CONSIDER} AND current date
   AND DF_ABSTAT!='XXX' AND DF_EMPFSTAT!='XXX'
 ORDER BY DF_DATAUFTANNAHME DESC";

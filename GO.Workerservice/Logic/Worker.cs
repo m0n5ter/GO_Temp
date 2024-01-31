@@ -18,16 +18,8 @@ public class Worker : BackgroundService
         _broker = broker;
         _client = client;
 
-        var displayPassword = configuration.DatabaseConfiguration.Password is null ? "-" : "***********";
-
         _logger.LogInformation("============== GO Workerservice is starting up ==============");
-
-        _logger.LogInformation("DatabaseConfiguration:");
-        _logger.LogInformation($"    - Host: {configuration.DatabaseConfiguration.Host}");
-        _logger.LogInformation($"    - Database: {configuration.DatabaseConfiguration.Database}");
-        _logger.LogInformation($"    - Engine: {configuration.DatabaseConfiguration.Engine}");
-        _logger.LogInformation($"    - Username: {configuration.DatabaseConfiguration.Username}");
-        _logger.LogInformation($"    - Password: {displayPassword}");
+        _logger.LogInformation($"Using ODBC DSN: {configuration.DatabaseConfiguration.DSN}");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

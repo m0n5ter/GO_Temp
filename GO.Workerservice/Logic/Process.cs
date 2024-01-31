@@ -20,7 +20,7 @@ public class Process(Configuration configuration, DatabaseService databaseServic
 
         try
         {
-            var order = await databaseService.GetOrderAsync(scan);
+            var order = await databaseService.GetOrderAsync(scan.OrderNumber);
 
             if (order == null)
             {
