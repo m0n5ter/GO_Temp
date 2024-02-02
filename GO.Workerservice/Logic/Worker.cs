@@ -37,6 +37,9 @@ public class Worker : BackgroundService
                 {
                     var lastOrderDate = await db.GetLastOrderDateAsync();
                     _logger.LogInformation("Latest order date in the database: {lastOrderDate}", lastOrderDate?.ToShortDateString() ?? "No orders");
+
+                    //await db.Test();
+
                     break;
                 }
                 finally

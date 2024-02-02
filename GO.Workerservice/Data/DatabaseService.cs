@@ -63,6 +63,17 @@ ORDER BY DF_DATAUFTANNAHME DESC";
         return await BuildCommand(sql).ExecuteScalarAsync() as DateTime?;
     }
 
+    public async Task Test()
+    {
+        var sql = @$"
+SELECT FIRST DF_DATAUFTANNAHME
+FROM DBA.TB_AUFTRAG
+WHERE DF_DATAUFTANNAHME <= current date
+ORDER BY DF_DATAUFTANNAHME DESC";
+
+        var ttt = await BuildCommand(sql).ExecuteScalarAsync() as DateTime?;
+    }
+
     public async Task<OrderData?> GetOrderAsync(string orderNumber)
     {
         var sql = @$"
