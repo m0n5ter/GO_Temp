@@ -10,12 +10,14 @@ public class DatabaseService(Configuration configuration, ILogger<DatabaseServic
     private const int DAYS_TO_CONSIDER = 3;
 
     private readonly ILogger<DatabaseService> _logger = logger;
+    Configuration _configuration = configuration;
+
     private OdbcConnection? _connection;
     private OdbcTransaction? _transaction;
 
     public async Task Begin()
     {
-        _connection = new OdbcConnection("DSN=godus");
+        _connection = new OdbcConnection($"DSN={_configuration.DatabaseConfiguration.DSN}");
         await _connection.OpenAsync();
         _transaction = (OdbcTransaction?) await _connection.BeginTransactionAsync();
     }
